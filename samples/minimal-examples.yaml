@@ -1,0 +1,29 @@
+# Minimal configuration examples
+# Shows the simplest possible projects and checks
+
+projects:
+  # Absolute minimum: just a name
+  - name: simple-project
+
+  # Name with single mandatory check
+  - name: basic-project
+    checks:
+      - name: build
+        mandatory: true
+
+  # Name and description
+  - name: documented-project
+    description: A project with documentation
+
+  # Complete minimal setup
+  - name: standard-project
+    description: Standard project setup
+    checks:
+      - name: build
+        mandatory: true
+      - name: tests
+        mandatory: true
+      - name: lint
+        mandatory: true
+      - name: deploy
+        mandatory: false

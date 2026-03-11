@@ -1,0 +1,75 @@
+# Full-stack web application configuration
+# Demonstrates a complete project with frontend, backend, and infrastructure checks
+
+projects:
+  - name: webapp-backend
+    description: Node.js + Express REST API backend
+    repo: https://github.com/company/webapp-backend
+    checks:
+      - name: build
+        description: Build TypeScript and bundle dependencies
+        mandatory: true
+      - name: tests
+        description: Run Jest unit and integration tests
+        mandatory: true
+      - name: coverage
+        description: Verify test coverage >= 80%
+        mandatory: false
+      - name: lint
+        description: Run ESLint and Prettier
+        mandatory: true
+      - name: type-check
+        description: TypeScript type checking
+        mandatory: true
+      - name: security
+        description: Snyk security vulnerability scan
+        mandatory: true
+      - name: database-migrations
+        description: Validate database migration scripts
+        mandatory: false
+      - name: api-docs
+        description: Generate and validate OpenAPI docs
+        mandatory: false
+
+  - name: webapp-frontend
+    description: React + TypeScript single-page application
+    repo: https://github.com/company/webapp-frontend
+    checks:
+      - name: build
+        description: Build React app with Vite
+        mandatory: true
+      - name: tests
+        description: Run Vitest unit tests
+        mandatory: true
+      - name: lint
+        description: ESLint and Prettier formatting
+        mandatory: true
+      - name: type-check
+        description: TypeScript type checking
+        mandatory: true
+      - name: visual-regression
+        description: Visual regression testing with Playwright
+        mandatory: false
+      - name: bundle-size
+        description: Check bundle size hasn't grown excessively
+        mandatory: false
+      - name: accessibility
+        description: axe accessibility scanning
+        mandatory: false
+
+  - name: webapp-infra
+    description: Terraform infrastructure as code
+    repo: https://github.com/company/webapp-infra
+    checks:
+      - name: validate
+        description: Terraform validate syntax
+        mandatory: true
+      - name: format
+        description: Terraform fmt formatting check
+        mandatory: true
+      - name: plan
+        description: Terraform plan for potential changes
+        mandatory: false
+      - name: security-scan
+        description: TFLint security scanning
+        mandatory: true

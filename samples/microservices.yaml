@@ -1,0 +1,95 @@
+# Microservices architecture configuration
+# Multiple services with containerization and deployment checks
+
+projects:
+  - name: user-service
+    description: User management microservice
+    repo: https://github.com/company/user-service
+    checks:
+      - name: build
+        description: Build Go binary
+        mandatory: true
+      - name: tests
+        description: Go test suite
+        mandatory: true
+      - name: lint
+        description: golangci-lint static analysis
+        mandatory: true
+      - name: docker-build
+        description: Build Docker image
+        mandatory: true
+      - name: security-scan
+        description: Trivy container security scan
+        mandatory: true
+      - name: helm-validate
+        description: Validate Kubernetes Helm chart
+        mandatory: false
+
+  - name: order-service
+    description: Order processing microservice
+    repo: https://github.com/company/order-service
+    checks:
+      - name: build
+        description: Build Go binary
+        mandatory: true
+      - name: tests
+        description: Go test suite with race detector
+        mandatory: true
+      - name: lint
+        description: golangci-lint checks
+        mandatory: true
+      - name: docker-build
+        description: Build Docker image
+        mandatory: true
+      - name: security-scan
+        description: Container vulnerability scan
+        mandatory: true
+      - name: integration-tests
+        description: Integration tests with dependencies
+        mandatory: false
+
+  - name: notification-service
+    description: Event-driven notification service
+    repo: https://github.com/company/notification-service
+    checks:
+      - name: build
+        description: Build service
+        mandatory: true
+      - name: tests
+        description: Unit and event tests
+        mandatory: true
+      - name: lint
+        description: Code linting
+        mandatory: true
+      - name: docker-build
+        description: Build Docker image
+        mandatory: true
+      - name: schema-validation
+        description: Validate event schemas
+        mandatory: true
+      - name: load-test
+        description: Load testing for throughput
+        mandatory: false
+
+  - name: api-gateway
+    description: API gateway and service mesh entry point
+    repo: https://github.com/company/api-gateway
+    checks:
+      - name: build
+        description: Build gateway binary
+        mandatory: true
+      - name: tests
+        description: Gateway routing tests
+        mandatory: true
+      - name: lint
+        description: Code quality checks
+        mandatory: true
+      - name: docker-build
+        description: Build Docker image
+        mandatory: true
+      - name: rate-limit-test
+        description: Test rate limiting and quotas
+        mandatory: false
+      - name: tls-validation
+        description: Validate TLS certificates
+        mandatory: true

@@ -1,0 +1,75 @@
+# Python-based projects configuration
+# Examples of data science, CLI, and library projects
+
+projects:
+  - name: ml-pipeline
+    description: Machine learning training pipeline
+    repo: https://github.com/company/ml-pipeline
+    checks:
+      - name: build
+        description: Install dependencies and build environment
+        mandatory: true
+      - name: tests
+        description: Run pytest unit tests
+        mandatory: true
+      - name: lint
+        description: pylint, black, isort checks
+        mandatory: true
+      - name: type-check
+        description: mypy static type checking
+        mandatory: false
+      - name: data-validation
+        description: Validate training data schema
+        mandatory: true
+      - name: model-quality
+        description: Verify model metrics meet thresholds
+        mandatory: true
+      - name: performance
+        description: Benchmark training/inference speed
+        mandatory: false
+
+  - name: etl-service
+    description: ETL batch processing service
+    repo: https://github.com/company/etl-service
+    checks:
+      - name: build
+        description: Build Python package
+        mandatory: true
+      - name: tests
+        description: pytest integration tests
+        mandatory: true
+      - name: lint
+        description: Code quality checks
+        mandatory: true
+      - name: schema-validation
+        description: Validate input/output schemas
+        mandatory: true
+      - name: dry-run
+        description: Test ETL with sample data
+        mandatory: false
+      - name: performance
+        description: Check throughput benchmarks
+        mandatory: false
+
+  - name: analytics-lib
+    description: Python analytics library
+    repo: https://github.com/company/analytics-lib
+    checks:
+      - name: build
+        description: Build Python wheel distribution
+        mandatory: true
+      - name: tests
+        description: pytest with coverage report
+        mandatory: true
+      - name: lint
+        description: pylint, black, isort
+        mandatory: true
+      - name: type-check
+        description: mypy type checking
+        mandatory: true
+      - name: docs
+        description: Generate Sphinx documentation
+        mandatory: false
+      - name: compatibility
+        description: Test on multiple Python versions
+        mandatory: false

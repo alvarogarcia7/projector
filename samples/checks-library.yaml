@@ -1,0 +1,124 @@
+# Reusable checks library
+# Common checks that can be imported into any project
+
+checks:
+  # Build and compilation
+  - name: build
+    description: Build/compile the project
+    mandatory: true
+
+  - name: build-release
+    description: Build release distribution
+    mandatory: false
+
+  # Testing
+  - name: tests
+    description: Run all unit tests
+    mandatory: true
+
+  - name: integration-tests
+    description: Run integration tests
+    mandatory: false
+
+  - name: e2e-tests
+    description: Run end-to-end tests
+    mandatory: false
+
+  - name: coverage
+    description: Check code coverage threshold
+    mandatory: false
+
+  # Code quality and standards
+  - name: lint
+    description: Run code linter
+    mandatory: true
+
+  - name: format
+    description: Check code formatting
+    mandatory: true
+
+  - name: type-check
+    description: Static type checking
+    mandatory: false
+
+  - name: style
+    description: Enforce code style guidelines
+    mandatory: false
+
+  # Security
+  - name: security
+    description: Security vulnerability scan
+    mandatory: true
+
+  - name: dependency-audit
+    description: Audit dependencies for vulnerabilities
+    mandatory: false
+
+  - name: sast
+    description: Static application security testing
+    mandatory: false
+
+  - name: secrets-scan
+    description: Scan for exposed secrets
+    mandatory: true
+
+  # Documentation
+  - name: docs
+    description: Build and validate documentation
+    mandatory: false
+
+  - name: api-docs
+    description: Generate API documentation
+    mandatory: false
+
+  # Performance and monitoring
+  - name: performance
+    description: Run performance benchmarks
+    mandatory: false
+
+  - name: bundle-size
+    description: Check bundle/artifact size
+    mandatory: false
+
+  - name: load-test
+    description: Load and stress testing
+    mandatory: false
+
+  # Infrastructure and deployment
+  - name: docker-build
+    description: Build Docker image
+    mandatory: false
+
+  - name: helm-validate
+    description: Validate Kubernetes Helm chart
+    mandatory: false
+
+  - name: terraform-validate
+    description: Validate Terraform configuration
+    mandatory: false
+
+  - name: terraform-plan
+    description: Terraform plan review
+    mandatory: false
+
+  # Database and data
+  - name: database-migrate
+    description: Validate database migrations
+    mandatory: false
+
+  - name: schema-validate
+    description: Validate data schema
+    mandatory: false
+
+  - name: data-quality
+    description: Data quality validation
+    mandatory: false
+
+  # Accessibility and compliance
+  - name: accessibility
+    description: Accessibility compliance testing
+    mandatory: false
+
+  - name: compliance
+    description: Compliance and audit checks
+    mandatory: false
