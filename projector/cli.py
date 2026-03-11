@@ -1,12 +1,16 @@
 """Projector CLI entry point using Typer."""
 
+from typing import Optional, List
 import typer
 from .commands import init, project, worktree, check, log, status, report, sync
 
-app = typer.Typer(help="Projector — Track software project health across machines")
+app = typer.Typer(
+    help="Projector — Track software project health across machines",
+    no_args_is_help=True
+)
 
 # Top-level commands
-@app.command()
+@app.command(name="init")
 def init_db(local: bool = typer.Option(False, "--local", help="Create local .projector.db")):
     """Initialize Projector database."""
     init.init_command(local=local)
@@ -19,8 +23,8 @@ app.add_typer(project_app, name="project")
 @project_app.command("add")
 def project_add(
     name: str,
-    description: str = typer.Option(None, "--description", "-d"),
-    repo: str = typer.Option(None, "--repo", "-r"),
+    description: Optional[str] = typer.Option(None, "--description", "-d"),
+    repo: Optional[str] = typer.Option(None, "--repo", "-r"),
 ):
     """Add a new project."""
     project.add_project(name, description=description, repo=repo)
@@ -52,7 +56,7 @@ app.add_typer(worktree_app, name="worktree")
 def worktree_add(
     project: str,
     name: str,
-    path: str = typer.Option(None, "--path", "-p"),
+    path: Optional[str] = typer.Option(None, "--path", "-p"),
 ):
     """Add a worktree to a project."""
     worktree.add_worktree(project, name, path=path)
@@ -78,7 +82,7 @@ app.add_typer(check_app, name="check")
 def check_add(
     project: str,
     name: str,
-    description: str = typer.Option(None, "--description", "-d"),
+    description: Optional[str] = typer.Option(None, "--description", "-d"),
     mandatory: bool = typer.Option(False, "--mandatory", "-m"),
 ):
     """Add a check to a project."""
@@ -108,13 +112,13 @@ def check_restore(project: str, name: str):
 
 # Log command
 @app.command()
-def log(
+def log_commit(
     project: str,
     worktree: str,
-    sha: str = typer.Option(None, "--sha"),
-    message: str = typer.Option(None, "--message"),
-    author: str = typer.Option(None, "--author"),
-    ci: list = typer.Option(None, "--ci"),
+    sha: Optional[str] = typer.Option(None, "--sha"),
+    message: Optional[str] = typer.Option(None, "--message"),
+    author: Optional[str] = typer.Option(None, "--author"),
+    ci: Optional[List[str]] = typer.Option(None, "--ci", help="CI mode results"),
 ):
     """Log check results for a commit."""
     log.log_command(project, worktree, sha=sha, message=message, author=author, ci=ci)
@@ -122,10 +126,10 @@ def log(
 
 # Status command
 @app.command()
-def status(
+def status_cmd(
     project: str,
-    worktree: str = typer.Argument(None),
-    sha: str = typer.Argument(None),
+    worktree: Optional[str] = typer.Argument(None),
+    sha: Optional[str] = typer.Argument(None),
     show_archived: bool = typer.Option(False, "--show-archived"),
 ):
     """Show project status."""
@@ -134,11 +138,11 @@ def status(
 
 # Report command
 @app.command()
-def report(
+def report_cmd(
     project: str,
     format: str = typer.Option("table", "--format", "-f"),
-    worktree: str = typer.Option(None, "--worktree", "-w"),
-    since: str = typer.Option(None, "--since", "-s"),
+    worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    since: Optional[str] = typer.Option(None, "--since", "-s"),
 ):
     """Generate a report of check results."""
     report.report_command(project, format=format, worktree=worktree, since=since)
@@ -155,7 +159,7 @@ def sync_import(db_path: str):
 
 
 @sync_app.command("export")
-def sync_export(output: str = typer.Option(None, "--output", "-o")):
+def sync_export(output: Optional[str] = typer.Option(None, "--output", "-o")):
     """Export the local database."""
     sync.export_command(output=output)
 
