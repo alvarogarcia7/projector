@@ -44,6 +44,11 @@ test: ## Run pytest tests
 	@echo "$(COLOR_BLUE)Running pytest tests...$(COLOR_RESET)"
 	uv run pytest tests -v
 
+.PHONY: test-e2e
+test-e2e: ## Run end-to-end tests
+	@echo "$(COLOR_BLUE)Running end-to-end tests...$(COLOR_RESET)"
+	bash tests/e2e_test.sh
+
 .PHONY: coverage
 coverage: ## Run tests with coverage report
 	@echo "$(COLOR_BLUE)Running tests with coverage...$(COLOR_RESET)"
