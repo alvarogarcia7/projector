@@ -40,9 +40,10 @@ type: ## Run mypy type checking
 	uv run mypy projector --config-file pyproject.toml
 
 .PHONY: test
-test: ## Run pytest tests
+test: ## Run pytest and end-to-end tests
 	@echo "$(COLOR_BLUE)Running pytest tests...$(COLOR_RESET)"
 	uv run pytest tests -v
+	$(MAKE) test-e2e
 
 .PHONY: test-e2e
 test-e2e: ## Run end-to-end tests
@@ -55,7 +56,7 @@ coverage: ## Run tests with coverage report
 	uv run pytest tests -v --cov=projector --cov-report=term-missing --cov-report=html
 
 .PHONY: pre-commit
-pre-commit: ## Run all checks (lint, type, test)
+pre-commit: ## Run all checks (lint, type, test, e2e)
 	$(MAKE) lint
 	$(MAKE) type
 	$(MAKE) test
