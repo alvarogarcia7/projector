@@ -125,7 +125,6 @@ def _show_worktree_history(db: Database, project_id: int, worktree_name: str, sh
     query += " ORDER BY name"
 
     checks = db.fetchall(query, tuple(params))
-    check_names = [c["name"] for c in checks]
 
     # Get commits
     commits = db.fetchall(

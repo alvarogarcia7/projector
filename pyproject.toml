@@ -24,10 +24,37 @@ proj = "projector.cli:app"
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.1",
+    "pylint>=3.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
 
 [tool.uv]
 managed = true
+dev-dependencies = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.1",
+    "pylint>=3.0",
+]
 
 [tool.uv.sources]
 # Any custom package sources can be defined here

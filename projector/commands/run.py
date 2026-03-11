@@ -5,7 +5,6 @@ import time
 import json
 import socket
 from datetime import datetime
-from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
@@ -85,7 +84,7 @@ def run_checks(
     except (subprocess.CalledProcessError, FileNotFoundError):
         status = "unknown"
 
-    console.print(f"\n[bold cyan]Running checks[/bold cyan]")
+    console.print("\n[bold cyan]Running checks[/bold cyan]")
     console.print(f"  Project:  {project}")
     console.print(f"  Worktree: {worktree}")
     console.print(f"  SHA:      {sha[:7]}")

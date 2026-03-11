@@ -2,7 +2,7 @@
 
 import sqlite3
 from datetime import datetime
-from typing import Dict, List, Tuple, Any
+from typing import Dict, Any
 from .db import Database
 
 
