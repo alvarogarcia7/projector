@@ -63,10 +63,11 @@ def configure_cmd(config_file: Optional[str] = typer.Option(None, "--file", "-f"
 
 @app.command(name="init-checks")
 def init_checks_cmd(
-    project: str,
+    project: Optional[str] = typer.Argument(None),
     config_file: Optional[str] = typer.Option(None, "--file", "-f"),
 ):
     """Initialize checks for a project from YAML file."""
+    project = resolve_project(project)
     init_checks.init_checks_from_yaml(project, config_file=config_file)
 
 
