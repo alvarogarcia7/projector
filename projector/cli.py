@@ -28,6 +28,7 @@ from .config import (
     save_project_config,
     save_worktree_config,
 )
+from .db import Database
 from .git import get_git_branch
 
 
@@ -260,12 +261,43 @@ app.add_typer(config_app, name="config")
 @config_app.command("set")
 def config_set(project: str):
     """Set the default project for this directory."""
+    from datetime import datetime
+
     save_project_config(project)
     typer.echo(f"✓ Default project set to '{project}'")
 
     # Also save the current git branch as the worktree
     branch = get_git_branch()
     if branch:
+        db = Database()
+        db.init_schema()
+
+        # Get project from database
+        proj = db.fetchone("SELECT id FROM projects WHERE name = ?", (project,))
+        if proj:
+            # Check if worktree already exists
+            wt = db.fetchone(
+                "SELECT id FROM worktrees WHERE project_id = ? AND name = ?",
+                (proj["id"], branch),
+            )
+            if not wt:
+                # Create the worktree
+                try:
+                    db.insert_and_get_id(
+                        "worktrees",
+                        project_id=proj["id"],
+                        name=branch,
+                        path=None,
+                        created_at=datetime.now(),
+                    )
+                    typer.echo(f"✓ Worktree '{branch}' created in project '{project}'")
+                except Exception as e:
+                    typer.echo(f"[yellow]⚠[/yellow] Could not create worktree: {e}")
+            else:
+                typer.echo(f"✓ Worktree '{branch}' already exists")
+        else:
+            typer.echo(f"[yellow]⚠[/yellow] Project '{project}' not found in database")
+
         save_worktree_config(branch)
         typer.echo(f"✓ Default worktree set to '{branch}' (from current branch)")
     else:
