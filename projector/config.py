@@ -49,11 +49,33 @@ def get_project_from_config() -> str:
     return None
 
 
+def get_worktree_from_config() -> str:
+    """
+    Try to detect the worktree name from .projector-worktree in current directory.
+    Returns the worktree name or None if not found.
+    """
+    config_file = Path.cwd() / ".projector-worktree"
+    if config_file.exists():
+        try:
+            with open(config_file) as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+
+
 def save_project_config(project_name: str) -> None:
     """Save the current project name to .projector-config in current directory."""
     config_file = Path.cwd() / ".projector-config"
     with open(config_file, "w") as f:
         f.write(project_name)
+
+
+def save_worktree_config(worktree_name: str) -> None:
+    """Save the current worktree name to .projector-worktree in current directory."""
+    config_file = Path.cwd() / ".projector-worktree"
+    with open(config_file, "w") as f:
+        f.write(worktree_name)
 
 
 def get_checks_bin_path() -> Path:

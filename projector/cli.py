@@ -24,9 +24,12 @@ from .config import (
     get_checks_bin_path,
     get_path_config,
     get_project_from_config,
+    get_worktree_from_config,
     save_path_config,
     save_project_config,
+    save_worktree_config,
 )
+from .git import get_git_branch
 
 
 def resolve_project(project_arg: Optional[str]) -> str:
@@ -42,6 +45,14 @@ def resolve_project(project_arg: Optional[str]) -> str:
     typer.echo("  1. Provide project name as argument: proj status my-app")
     typer.echo("  2. Save project config: proj config set my-app")
     raise typer.Exit(1)
+
+
+def resolve_worktree(worktree_arg: Optional[str]) -> Optional[str]:
+    """Resolve worktree name from argument or config."""
+    if worktree_arg:
+        return worktree_arg
+
+    return get_worktree_from_config()
 
 
 app = typer.Typer(
@@ -179,6 +190,7 @@ def run_cmd(
 ):
     """Run checks and record results."""
     project = resolve_project(project)
+    worktree = resolve_worktree(worktree)
     run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run)
 
 
@@ -223,6 +235,7 @@ def status_cmd(
 ):
     """Show project status."""
     project = resolve_project(project)
+    worktree = resolve_worktree(worktree)
     status.status_command(project, worktree=worktree, sha=sha, show_archived=show_archived)
 
 
@@ -236,6 +249,7 @@ def report_cmd(
 ):
     """Generate a report of check results."""
     project = resolve_project(project)
+    worktree = resolve_worktree(worktree)
     report.report_command(project, format=format, worktree=worktree, since=since)
 
 
@@ -266,6 +280,14 @@ def config_set(project: str):
     """Set the default project for this directory."""
     save_project_config(project)
     typer.echo(f"✓ Default project set to '{project}'")
+
+    # Also save the current git branch as the worktree
+    branch = get_git_branch()
+    if branch:
+        save_worktree_config(branch)
+        typer.echo(f"✓ Default worktree set to '{branch}' (from current branch)")
+    else:
+        typer.echo("[yellow]⚠[/yellow] Not in a git repository; worktree not set")
 
 
 @config_app.command("get")
