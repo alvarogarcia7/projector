@@ -128,12 +128,20 @@ def _output_json(rows):
     """Output as JSON."""
     data = []
     for row in rows:
+        # Parse details JSON if present
+        details = {}
+        if row["comment"]:
+            try:
+                details = json.loads(row["comment"])
+            except json.JSONDecodeError:
+                details = {"raw_comment": row["comment"]}
+
         data.append({
             "worktree": row["worktree_name"],
             "sha": row["sha"],
             "check": row["check_name"],
             "status": row["status"],
-            "comment": row["comment"],
+            "details": details,
             "logged_at": row["logged_at"],
         })
 

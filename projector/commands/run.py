@@ -2,6 +2,8 @@
 
 import subprocess
 import time
+import json
+import socket
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -108,8 +110,6 @@ def run_checks(
     if existing_commit:
         commit_id = existing_commit["id"]
     else:
-        import socket
-
         commit_id = db.insert_and_get_id(
             "commits",
             worktree_id=wt["id"],
@@ -157,15 +157,20 @@ def run_checks(
                 check_status = "fail"
                 icon = "[red]✗[/red]"
 
-            # Record result
+            # Record result with full execution details as JSON
             existing_result = db.fetchone(
                 "SELECT id FROM check_results WHERE commit_id = ? AND check_id = ?",
                 (commit_id, check_item["id"]),
             )
 
-            import socket
-
-            comment = f"exit_code={exit_code}, time={elapsed:.2f}s, status={status}"
+            details = {
+                "status": "pass" if exit_code == 0 else "fail",
+                "exit_code": exit_code,
+                "time": round(elapsed, 2),
+                "git_status": status,
+                "machine": socket.gethostname(),
+            }
+            comment = json.dumps(details)
 
             if existing_result:
                 db.execute(
@@ -200,15 +205,22 @@ def run_checks(
 
         except subprocess.TimeoutExpired:
             console.print("[red]✗[/red] timeout")
-            comment = f"timeout after 300s, status={status}"
+            details = {
+                "status": "fail",
+                "error": "timeout",
+                "timeout_seconds": 300,
+                "git_status": status,
+                "machine": socket.gethostname(),
+            }
+            comment = json.dumps(details)
             existing_result = db.fetchone(
                 "SELECT id FROM check_results WHERE commit_id = ? AND check_id = ?",
                 (commit_id, check_item["id"]),
             )
             if existing_result:
                 db.execute(
-                    "UPDATE check_results SET status = ?, comment = ?, logged_at = ? WHERE id = ?",
-                    ("fail", comment, datetime.now(), existing_result["id"]),
+                    "UPDATE check_results SET status = ?, comment = ?, logged_at = ?, machine_id = ? WHERE id = ?",
+                    ("fail", comment, datetime.now(), socket.gethostname(), existing_result["id"]),
                 )
             else:
                 db.insert_and_get_id(
@@ -225,15 +237,21 @@ def run_checks(
 
         except Exception as e:
             console.print(f"[red]✗[/red] error: {e}")
-            comment = f"error: {str(e)}, status={status}"
+            details = {
+                "status": "fail",
+                "error": str(e),
+                "git_status": status,
+                "machine": socket.gethostname(),
+            }
+            comment = json.dumps(details)
             existing_result = db.fetchone(
                 "SELECT id FROM check_results WHERE commit_id = ? AND check_id = ?",
                 (commit_id, check_item["id"]),
             )
             if existing_result:
                 db.execute(
-                    "UPDATE check_results SET status = ?, comment = ?, logged_at = ? WHERE id = ?",
-                    ("fail", comment, datetime.now(), existing_result["id"]),
+                    "UPDATE check_results SET status = ?, comment = ?, logged_at = ?, machine_id = ? WHERE id = ?",
+                    ("fail", comment, datetime.now(), socket.gethostname(), existing_result["id"]),
                 )
             else:
                 db.insert_and_get_id(
