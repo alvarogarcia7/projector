@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "projector"
@@ -24,3 +24,9 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
 ]
+
+[tool.uv]
+managed = true
+
+[tool.uv.sources]
+# Any custom package sources can be defined here

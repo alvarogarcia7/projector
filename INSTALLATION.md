@@ -3,17 +3,21 @@
 ## Requirements
 
 - Python 3.9+
-- `typer[all]>=0.9.0` (CLI framework)
-- `rich>=13.0.0` (terminal output)
+- [UV](https://astral.sh/blog/uv) (fast Python package manager)
 
 ## Quick Install
 
-### Option 1: Using pip (Recommended)
+### Option 1: Using UV (Recommended)
 
 ```bash
 git clone https://github.com/you/projector
 cd projector
-pip install -e .
+
+# Install UV if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies
+uv pip install -e .
 ```
 
 Then you can use `proj` command directly:
@@ -23,9 +27,17 @@ proj --help
 proj init
 ```
 
-### Option 2: Using Python directly
+### Option 2: Using pip
 
-If pip is not available, you can run Projector directly with Python:
+```bash
+git clone https://github.com/you/projector
+cd projector
+pip install -e .
+```
+
+### Option 3: Using Python directly
+
+If package managers are not available, you can run Projector directly with Python:
 
 ```bash
 cd projector
@@ -61,12 +73,16 @@ docker run --rm projector --help
 
 - **typer**: Modern Python CLI framework with automatic help generation
 - **rich**: Beautiful table rendering and terminal formatting
+- **click**: Dependency of typer
+- **shellingham**: Shell detection for typer
 
 ### Built-in Dependencies (No additional install needed)
 
 - **sqlite3**: Database (stdlib)
 - **subprocess**: Git integration (stdlib)
 - **socket**: Machine ID detection (stdlib)
+
+All dependencies are specified in `pyproject.toml` and locked in `uv.lock` for reproducible builds.
 
 ## Verification
 
@@ -88,10 +104,10 @@ You should see:
 
 ### "proj: command not found"
 
-If using `pip install -e .`, ensure your Python scripts directory is in your PATH:
+If using `uv pip install -e .` or `pip install -e .`, ensure your Python scripts directory is in your PATH:
 
 ```bash
-# Find where pip installed proj
+# Find where it was installed
 which proj
 
 # Or run directly
@@ -100,13 +116,19 @@ python3 -m projector.cli --help
 
 ### "ModuleNotFoundError: No module named 'typer'"
 
-Install dependencies:
+Install dependencies with UV:
 
 ```bash
-pip install typer[all] rich
+uv pip install -e .
 ```
 
-Or if pip is not available, dependencies must be installed system-wide or in a virtualenv.
+Or with pip:
+
+```bash
+pip install -e .
+```
+
+The lock file ensures consistent versions across all installations.
 
 ### SQLite3 not found
 
@@ -123,6 +145,13 @@ brew install python3
 ## Development Setup
 
 For development with testing:
+
+```bash
+uv pip install -e '.[dev]'
+uv run pytest
+```
+
+Or with pip:
 
 ```bash
 pip install -e '.[dev]'

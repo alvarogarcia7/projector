@@ -4,11 +4,28 @@ A CLI tool for tracking software project health across multiple machines, worktr
 
 ## Installation
 
+### Using UV (Recommended)
+
+```bash
+git clone https://github.com/you/projector
+cd projector
+
+# Install UV if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install projector
+uv pip install -e .
+```
+
+### Using pip
+
 ```bash
 git clone https://github.com/you/projector
 cd projector
 pip install -e .
 ```
+
+See [INSTALLATION.md](INSTALLATION.md) for more options.
 
 ## Quick Start
 
