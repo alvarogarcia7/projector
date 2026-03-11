@@ -2,8 +2,7 @@
 
 import sqlite3
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Tuple, Any
+from typing import Optional, List, Tuple
 from .config import get_db_path
 
 

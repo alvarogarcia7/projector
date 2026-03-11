@@ -144,7 +144,7 @@ def configure_from_file(
         if isinstance(proj_checks, list):
             for check_config in proj_checks:
                 if not isinstance(check_config, dict):
-                    console.print(f"[yellow]⚠[/yellow] Skipping invalid check entry")
+                    console.print("[yellow]⚠[/yellow] Skipping invalid check entry")
                     skipped += 1
                     continue
 

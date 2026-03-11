@@ -102,7 +102,7 @@ def archive_check(project: str, name: str) -> None:
         console.print(f"[red]✗[/red] Check '{name}' not found in project '{project}'")
         raise typer.Exit(1)
 
-    cursor = db.execute(
+    db.execute(
         "UPDATE checks SET archived = 1, archived_at = ? WHERE id = ?",
         (datetime.now(), check["id"]),
     )
@@ -126,7 +126,7 @@ def restore_check(project: str, name: str) -> None:
         console.print(f"[red]✗[/red] Check '{name}' not found in project '{project}'")
         raise typer.Exit(1)
 
-    cursor = db.execute(
+    db.execute(
         "UPDATE checks SET archived = 0, archived_at = NULL WHERE id = ?",
         (check["id"],),
     )

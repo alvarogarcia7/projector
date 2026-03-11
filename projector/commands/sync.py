@@ -29,7 +29,7 @@ def import_command(db_path: str) -> None:
     try:
         stats = merger.import_db()
 
-        console.print(f"\n[green]✓[/green] Import complete")
+        console.print("\n[green]✓[/green] Import complete")
         console.print(f"  Rows received: {stats['rows_received']}")
         console.print(f"  Rows sent: {stats['rows_sent']}")
         console.print(f"  Conflicts resolved: {stats['conflicts']}")
