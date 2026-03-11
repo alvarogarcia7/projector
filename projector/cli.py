@@ -262,6 +262,7 @@ app.add_typer(config_app, name="config")
 def config_set(project: str):
     """Set the default project for this directory."""
     from datetime import datetime
+    from pathlib import Path
 
     save_project_config(project)
     typer.echo(f"✓ Default project set to '{project}'")
@@ -302,6 +303,15 @@ def config_set(project: str):
         typer.echo(f"✓ Default worktree set to '{branch}' (from current branch)")
     else:
         typer.echo("[yellow]⚠[/yellow] Not in a git repository; worktree not set")
+
+    # Set up PATH to include bin/ directory
+    bin_dir = Path.cwd() / "bin"
+    if bin_dir.exists():
+        save_path_config(str(bin_dir))
+        apply_path_config()
+        typer.echo(f"✓ Added {bin_dir} to PATH")
+    else:
+        typer.echo(f"[dim]Note: bin/ directory not found at {bin_dir}[/dim]")
 
 
 @config_app.command("get")
