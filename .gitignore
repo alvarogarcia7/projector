@@ -48,6 +48,7 @@ htmlcov/
 .projector.db-shm
 .projector.db-wal
 .projector-config
+.projector-worktree
 
 # Temporary files
 *.tmp
