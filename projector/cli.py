@@ -2,7 +2,7 @@
 
 from typing import Optional, List
 import typer
-from .commands import init, project, worktree, check, log, status, report, sync
+from .commands import init, project, worktree, check, log, status, report, sync, run
 from .config import get_project_from_config, save_project_config
 
 
@@ -124,6 +124,19 @@ def check_archive(project: str, name: str):
 def check_restore(project: str, name: str):
     """Restore an archived check."""
     check.restore_check(project, name)
+
+
+# Run command
+@app.command(name="run")
+def run_cmd(
+    project: Optional[str] = typer.Argument(None),
+    worktree: Optional[str] = typer.Argument(None),
+    check: Optional[str] = typer.Option(None, "--check", "-c"),
+    dry_run: bool = typer.Option(False, "--dry-run"),
+):
+    """Run checks and record results."""
+    project = resolve_project(project)
+    run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run)
 
 
 # Log command
