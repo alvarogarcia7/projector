@@ -11,6 +11,7 @@ import typer
 from rich.console import Console
 from ..db import Database
 from ..git import get_git_info
+from ..config import apply_path_config
 
 console = Console()
 
@@ -27,6 +28,9 @@ def run_checks(
     Runs all checks (or a specific one with --check) for the current project/worktree.
     Records execution status, exit code, and execution time.
     """
+    # Apply configured PATH for checks bin directory
+    apply_path_config()
+
     db = Database()
     db.init_schema()
 

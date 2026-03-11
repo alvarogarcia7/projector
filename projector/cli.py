@@ -3,7 +3,15 @@
 from typing import Optional, List
 import typer
 from .commands import init, project, worktree, check, log, status, report, sync, run, configure, init_checks
-from .config import get_project_from_config, save_project_config
+from .config import (
+    get_project_from_config,
+    save_project_config,
+    get_path_config,
+    save_path_config,
+    clear_path_config,
+    apply_path_config,
+    get_checks_bin_path,
+)
 
 
 def resolve_project(project_arg: Optional[str]) -> str:
@@ -241,6 +249,63 @@ def config_clear():
         typer.echo("✓ Default project cleared")
     else:
         typer.echo("No default project configured")
+
+
+@config_app.command("path-set")
+def config_path_set(bin_path: Optional[str] = typer.Argument(None)):
+    """Configure checks bin directory for this project."""
+    if not bin_path:
+        # Auto-detect bin/ directory
+        detected = get_checks_bin_path()
+        if detected:
+            bin_path = str(detected)
+            typer.echo(f"Auto-detected bin directory: {bin_path}")
+        else:
+            typer.echo("Error: bin/ directory not found and no path provided")
+            typer.echo("Usage: proj config path-set /path/to/bin")
+            raise typer.Exit(1)
+
+    # Verify the path exists
+    from pathlib import Path
+    if not Path(bin_path).exists():
+        typer.echo(f"Error: Path does not exist: {bin_path}")
+        raise typer.Exit(1)
+
+    save_path_config(bin_path)
+    typer.echo(f"✓ Checks bin path set to '{bin_path}'")
+    typer.echo("Hint: Run 'proj config path-apply' to update your environment")
+
+
+@config_app.command("path-get")
+def config_path_get():
+    """Show the configured checks bin directory."""
+    path = get_path_config()
+    if path:
+        typer.echo(f"Checks bin path: {path}")
+    else:
+        typer.echo("No checks bin path configured")
+        typer.echo("Use 'proj config path-set' to configure")
+
+
+@config_app.command("path-apply")
+def config_path_apply():
+    """Apply the configured checks bin directory to PATH."""
+    apply_path_config()
+    path = get_path_config()
+    if path:
+        typer.echo(f"✓ Added to PATH: {path}")
+        typer.echo("Tip: Add to your shell profile to make it permanent:")
+        typer.echo(f"  export PATH=\"{path}:$PATH\"")
+    else:
+        typer.echo("No checks bin path configured")
+        typer.echo("Use 'proj config path-set' first")
+
+
+@config_app.command("path-clear")
+def config_path_clear():
+    """Clear the checks bin directory configuration."""
+    clear_path_config()
+    typer.echo("✓ Checks bin path cleared")
 
 
 if __name__ == "__main__":

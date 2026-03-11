@@ -54,3 +54,58 @@ def save_project_config(project_name: str) -> None:
     config_file = Path.cwd() / ".projector-config"
     with open(config_file, "w") as f:
         f.write(project_name)
+
+
+def get_checks_bin_path() -> Path:
+    """
+    Get the path to the checks bin directory.
+    Looks for bin/ directory in current working directory or parent directories.
+    """
+    current = Path.cwd()
+    for _ in range(5):  # Search up to 5 directories up
+        bin_dir = current / "bin"
+        if bin_dir.exists() and bin_dir.is_dir():
+            return bin_dir
+        current = current.parent
+    return None
+
+
+def get_path_config() -> str:
+    """
+    Get the configured checks bin path from .projector-path file.
+    Returns the path or None if not configured.
+    """
+    config_file = Path.cwd() / ".projector-path"
+    if config_file.exists():
+        try:
+            with open(config_file) as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+
+
+def save_path_config(bin_path: str) -> None:
+    """Save the checks bin path to .projector-path in current directory."""
+    config_file = Path.cwd() / ".projector-path"
+    with open(config_file, "w") as f:
+        f.write(bin_path)
+
+
+def clear_path_config() -> None:
+    """Clear the checks bin path configuration."""
+    config_file = Path.cwd() / ".projector-path"
+    if config_file.exists():
+        config_file.unlink()
+
+
+def apply_path_config() -> None:
+    """
+    Apply the configured checks bin path to the current environment.
+    This adds the checks bin directory to the PATH.
+    """
+    bin_path = get_path_config()
+    if bin_path:
+        path = os.environ.get("PATH", "")
+        if bin_path not in path.split(":"):
+            os.environ["PATH"] = f"{bin_path}:{path}"
