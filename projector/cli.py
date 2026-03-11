@@ -2,7 +2,7 @@
 
 from typing import Optional, List
 import typer
-from .commands import init, project, worktree, check, log, status, report, sync, run
+from .commands import init, project, worktree, check, log, status, report, sync, run, configure, init_checks
 from .config import get_project_from_config, save_project_config
 
 
@@ -30,6 +30,21 @@ app = typer.Typer(
 def init_db(local: bool = typer.Option(False, "--local", help="Create local .projector.db")):
     """Initialize Projector database."""
     init.init_command(local=local)
+
+
+@app.command(name="configure")
+def configure_cmd(config_file: Optional[str] = typer.Option(None, "--file", "-f")):
+    """Configure projects and checks from YAML file."""
+    configure.configure_from_file(config_file=config_file)
+
+
+@app.command(name="init-checks")
+def init_checks_cmd(
+    project: str,
+    config_file: Optional[str] = typer.Option(None, "--file", "-f"),
+):
+    """Initialize checks for a project from YAML file."""
+    init_checks.init_checks_from_yaml(project, config_file=config_file)
 
 
 # Project commands

@@ -14,6 +14,7 @@ authors = [{name = "Projector Contributors"}]
 dependencies = [
     "typer[all]>=0.9.0",
     "rich>=13.0.0",
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]

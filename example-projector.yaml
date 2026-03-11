@@ -1,0 +1,49 @@
+# Example Projector configuration file
+# This demonstrates how to configure projects and checks declaratively
+
+projects:
+  # Full project with all options
+  - name: my-api
+    description: REST API backend service
+    repo: https://github.com/company/my-api
+    checks:
+      - name: build
+        description: Compile/build the project
+        mandatory: true
+      - name: tests
+        description: Run unit and integration tests
+        mandatory: true
+      - name: coverage
+        description: Check test coverage (>80%)
+        mandatory: false
+      - name: lint
+        description: Run code linter (eslint, pylint, etc)
+        mandatory: false
+      - name: security
+        description: Security vulnerability scan
+        mandatory: true
+      - name: deploy
+        description: Deploy to staging environment
+        mandatory: false
+
+  # Minimal project with just required fields
+  - name: docs-site
+    checks:
+      - name: build
+        mandatory: true
+      - name: test-links
+        mandatory: false
+
+  # Another example project
+  - name: data-pipeline
+    description: ETL data processing pipeline
+    checks:
+      - name: validate-schema
+        description: Validate data schema
+        mandatory: true
+      - name: run-pipeline
+        description: Execute full pipeline
+        mandatory: false
+      - name: check-data-quality
+        description: Data quality metrics
+        mandatory: false

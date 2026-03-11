@@ -1,0 +1,19 @@
+# Example checks configuration file
+# Can be used with: proj init-checks <project> --file example-checks.yaml
+
+checks:
+  - name: format
+    description: Check code formatting (prettier, black, etc)
+    mandatory: false
+
+  - name: type-check
+    description: Run type checker (TypeScript, mypy, etc)
+    mandatory: false
+
+  - name: performance
+    description: Performance benchmarks
+    mandatory: false
+
+  - name: docs
+    description: Generate and validate documentation
+    mandatory: false
