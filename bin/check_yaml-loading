@@ -1,0 +1,32 @@
+#!/bin/bash
+# Check: Test YAML configuration loading
+set -e
+
+echo "Testing YAML configuration loading..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+cleanup() {
+    rm -f "$TEST_DB"
+}
+trap cleanup EXIT
+
+# Initialize database
+uv run proj init > /dev/null
+
+# Test loading each sample
+SAMPLES="samples/minimal-examples.yaml samples/full-stack-app.yaml samples/python-projects.yaml"
+
+for sample in $SAMPLES; do
+    if [ -f "$sample" ]; then
+        echo "  Loading: $sample"
+        uv run proj configure --file "$sample" > /dev/null || {
+            echo "✗ Failed to load $sample"
+            exit 1
+        }
+    fi
+done
+
+echo "✓ YAML loading test passed"

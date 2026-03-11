@@ -1,0 +1,180 @@
+# Projector Self-Monitoring Configuration
+# This configuration tracks the health of the Projector project itself
+#
+# Usage:
+#   proj configure --file projector-self-config.yaml
+#
+# Then implement the check_* commands in bin/ directory
+
+projects:
+  - name: projector-core
+    description: Projector CLI - Core project health tracking tool
+    repo: https://github.com/anthropics/projector
+    checks:
+      - name: build
+        description: Build Python package with UV
+        mandatory: true
+
+      - name: tests
+        description: Run unit tests with pytest
+        mandatory: true
+
+      - name: lint
+        description: Lint Python code (pylint, black, isort)
+        mandatory: true
+
+      - name: type-check
+        description: Static type checking with mypy
+        mandatory: false
+
+      - name: security
+        description: Security scanning (bandit, safety)
+        mandatory: true
+
+      - name: imports
+        description: Verify all imports are resolvable
+        mandatory: false
+
+      - name: coverage
+        description: Check test coverage >= 80%
+        mandatory: false
+
+      - name: cli-help
+        description: Verify all CLI commands have help text
+        mandatory: false
+
+      - name: samples-valid
+        description: Validate all YAML sample files
+        mandatory: true
+
+      - name: docs
+        description: Build and validate documentation
+        mandatory: false
+
+      - name: database-schema
+        description: Verify database schema integrity
+        mandatory: false
+
+      - name: git-integration
+        description: Test git integration functions
+        mandatory: true
+
+  - name: projector-cli
+    description: Projector CLI Commands and User Interface
+    repo: https://github.com/anthropics/projector
+    checks:
+      - name: cli-syntax
+        description: Verify CLI syntax and argument parsing
+        mandatory: true
+
+      - name: cli-commands
+        description: Test all CLI commands execute
+        mandatory: true
+
+      - name: help-text
+        description: Verify help text for all commands
+        mandatory: false
+
+      - name: error-handling
+        description: Test error handling and edge cases
+        mandatory: false
+
+      - name: output-formats
+        description: Test JSON, CSV, and Table output formats
+        mandatory: true
+
+      - name: rich-formatting
+        description: Verify Rich terminal formatting
+        mandatory: false
+
+  - name: projector-docs
+    description: Projector Documentation and Samples
+    repo: https://github.com/anthropics/projector
+    checks:
+      - name: markdown-syntax
+        description: Validate markdown files syntax
+        mandatory: false
+
+      - name: links-valid
+        description: Check all documentation links are valid
+        mandatory: false
+
+      - name: samples-loadable
+        description: Verify YAML samples are loadable
+        mandatory: true
+
+      - name: code-examples
+        description: Validate code examples in documentation
+        mandatory: false
+
+      - name: readme-complete
+        description: Verify README has all required sections
+        mandatory: false
+
+      - name: quickref-current
+        description: Verify quick reference matches CLI
+        mandatory: false
+
+  - name: projector-database
+    description: Projector Database Layer and Schema
+    repo: https://github.com/anthropics/projector
+    checks:
+      - name: schema-create
+        description: Test database schema creation
+        mandatory: true
+
+      - name: schema-migrate
+        description: Test database migrations
+        mandatory: false
+
+      - name: queries-valid
+        description: Verify all SQL queries are valid
+        mandatory: true
+
+      - name: transactions
+        description: Test transaction handling
+        mandatory: false
+
+      - name: concurrent-access
+        description: Test concurrent database access
+        mandatory: false
+
+      - name: data-integrity
+        description: Verify data constraints and integrity
+        mandatory: false
+
+  - name: projector-integration
+    description: Projector Integration Tests and Scenarios
+    repo: https://github.com/anthropics/projector
+    checks:
+      - name: full-workflow
+        description: Test complete workflow (init -> configure -> run -> report)
+        mandatory: true
+
+      - name: yaml-loading
+        description: Test YAML configuration loading
+        mandatory: true
+
+      - name: check-execution
+        description: Test check execution and result recording
+        mandatory: true
+
+      - name: mandatory-enforcement
+        description: Test mandatory check enforcement
+        mandatory: true
+
+      - name: json-storage
+        description: Test JSON detail storage in database
+        mandatory: true
+
+      - name: report-generation
+        description: Test report generation in all formats
+        mandatory: false
+
+      - name: cross-machine-sync
+        description: Test cross-machine database sync
+        mandatory: false
+
+      - name: conflict-resolution
+        description: Test conflict detection and resolution
+        mandatory: false

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Check: Build Python package with UV
+set -e
+
+echo "Building Projector package..."
+uv sync
+echo "✓ Package built successfully"

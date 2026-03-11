@@ -1,0 +1,71 @@
+#!/bin/bash
+# Check: Test JSON detail storage in database
+set -e
+
+echo "Testing JSON detail storage in database..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+# Create test check script
+TEMP_CHECK="/tmp/test_check_$$"
+cat > "$TEMP_CHECK" << 'EOF'
+#!/bin/bash
+exit 0
+EOF
+chmod +x "$TEMP_CHECK"
+
+cleanup() {
+    rm -f "$TEST_DB" "$TEMP_CHECK"
+}
+trap cleanup EXIT
+
+# Setup
+uv run proj init > /dev/null
+uv run proj project add test-project > /dev/null
+uv run proj worktree add test-project main > /dev/null
+uv run proj check add test-project test-check > /dev/null
+
+# Move check to PATH
+export PATH="$(dirname "$TEMP_CHECK"):$PATH"
+mv "$TEMP_CHECK" "$(dirname "$TEMP_CHECK")/check_test-check"
+
+# Run check
+uv run proj run test-project main > /dev/null
+
+# Verify JSON details were stored
+echo "  Verifying JSON details storage..."
+REPORT=$(uv run proj report test-project --format json 2>/dev/null)
+
+if ! echo "$REPORT" | grep -q "details"; then
+    echo "✗ JSON details not found in report"
+    exit 1
+fi
+
+if ! echo "$REPORT" | grep -q "status"; then
+    echo "✗ Status field not found in details"
+    exit 1
+fi
+
+if ! echo "$REPORT" | grep -q "exit_code"; then
+    echo "✗ Exit code field not found in details"
+    exit 1
+fi
+
+if ! echo "$REPORT" | grep -q "time"; then
+    echo "✗ Time field not found in details"
+    exit 1
+fi
+
+if ! echo "$REPORT" | grep -q "git_status"; then
+    echo "✗ Git status field not found in details"
+    exit 1
+fi
+
+if ! echo "$REPORT" | grep -q "machine"; then
+    echo "✗ Machine field not found in details"
+    exit 1
+fi
+
+echo "✓ JSON detail storage works correctly"

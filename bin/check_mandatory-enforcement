@@ -1,0 +1,60 @@
+#!/bin/bash
+# Check: Test mandatory check enforcement
+set -e
+
+echo "Testing mandatory check enforcement..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+# Create temporary check scripts
+TEMP_PASS="/tmp/test_pass_$$"
+TEMP_FAIL="/tmp/test_fail_$$"
+
+cat > "$TEMP_PASS" << 'EOF'
+#!/bin/bash
+exit 0
+EOF
+
+cat > "$TEMP_FAIL" << 'EOF'
+#!/bin/bash
+exit 1
+EOF
+
+chmod +x "$TEMP_PASS" "$TEMP_FAIL"
+
+cleanup() {
+    rm -f "$TEST_DB" "$TEMP_PASS" "$TEMP_FAIL" "/tmp/check_pass_$$" "/tmp/check_fail_$$"
+}
+trap cleanup EXIT
+
+# Setup
+uv run proj init > /dev/null
+uv run proj project add test-project > /dev/null
+uv run proj worktree add test-project main > /dev/null
+
+# Add mandatory passing check
+uv run proj check add test-project pass-check --mandatory > /dev/null
+mv "$TEMP_PASS" "/tmp/check_pass_$$"
+export PATH="/tmp:$PATH"
+
+# Test: Mandatory passing check should succeed
+echo "  Testing: mandatory passing check"
+uv run proj run test-project main > /dev/null || {
+    echo "✗ Mandatory passing check failed"
+    exit 1
+}
+
+# Add mandatory failing check
+uv run proj check add test-project fail-check --mandatory > /dev/null
+mv "$TEMP_FAIL" "/tmp/check_fail_$$"
+
+# Test: Mandatory failing check should exit non-zero
+echo "  Testing: mandatory failing check"
+uv run proj run test-project main > /dev/null 2>&1 && {
+    echo "✗ Mandatory failing check did not exit with error"
+    exit 1
+} || true
+
+echo "✓ Mandatory check enforcement works correctly"

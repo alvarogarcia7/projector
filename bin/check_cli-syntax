@@ -1,0 +1,24 @@
+#!/bin/bash
+# Check: Verify CLI syntax and argument parsing
+set -e
+
+echo "Testing CLI syntax and argument parsing..."
+
+# Test: Main help command
+echo "  Testing: proj --help"
+uv run proj --help > /dev/null || {
+    echo "✗ Main help command failed"
+    exit 1
+}
+
+# Test: All subcommands have help
+COMMANDS="init project worktree check run log status report configure init-checks sync config"
+for cmd in $COMMANDS; do
+    echo "  Testing: proj $cmd --help"
+    uv run proj $cmd --help > /dev/null || {
+        echo "✗ Command 'proj $cmd' help failed"
+        exit 1
+    }
+done
+
+echo "✓ CLI syntax verification passed"

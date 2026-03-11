@@ -1,0 +1,65 @@
+#!/bin/bash
+# Check: Test all CLI commands execute
+set -e
+
+echo "Testing CLI commands execution..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+cleanup() {
+    rm -f "$TEST_DB"
+}
+trap cleanup EXIT
+
+# Test: Initialize database
+echo "  Testing: proj init"
+uv run proj init > /dev/null || {
+    echo "✗ proj init failed"
+    exit 1
+}
+
+# Test: Add project
+echo "  Testing: proj project add"
+uv run proj project add test-project > /dev/null || {
+    echo "✗ proj project add failed"
+    exit 1
+}
+
+# Test: List projects
+echo "  Testing: proj project list"
+uv run proj project list > /dev/null || {
+    echo "✗ proj project list failed"
+    exit 1
+}
+
+# Test: Add worktree
+echo "  Testing: proj worktree add"
+uv run proj worktree add test-project main > /dev/null || {
+    echo "✗ proj worktree add failed"
+    exit 1
+}
+
+# Test: Add check
+echo "  Testing: proj check add"
+uv run proj check add test-project test-check --mandatory > /dev/null || {
+    echo "✗ proj check add failed"
+    exit 1
+}
+
+# Test: List checks
+echo "  Testing: proj check list"
+uv run proj check list test-project > /dev/null || {
+    echo "✗ proj check list failed"
+    exit 1
+}
+
+# Test: Status command
+echo "  Testing: proj status"
+uv run proj status test-project > /dev/null || {
+    echo "✗ proj status failed"
+    exit 1
+}
+
+echo "✓ All CLI commands executed successfully"

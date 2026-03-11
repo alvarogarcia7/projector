@@ -1,0 +1,45 @@
+#!/bin/bash
+# Check: Test report generation in all formats
+set -e
+
+echo "Testing report generation..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+cleanup() {
+    rm -f "$TEST_DB"
+}
+trap cleanup EXIT
+
+# Setup
+uv run proj init > /dev/null
+uv run proj project add test-project > /dev/null
+uv run proj worktree add test-project main > /dev/null
+
+# Test Table format
+echo "  Testing: table format"
+TABLE=$(uv run proj report test-project --format table 2>/dev/null)
+if [ -z "$TABLE" ]; then
+    echo "✗ Table format returned empty"
+    exit 1
+fi
+
+# Test JSON format
+echo "  Testing: json format"
+JSON=$(uv run proj report test-project --format json 2>/dev/null)
+if ! echo "$JSON" | grep -q "\["; then
+    echo "✗ JSON format invalid"
+    exit 1
+fi
+
+# Test CSV format
+echo "  Testing: csv format"
+CSV=$(uv run proj report test-project --format csv 2>/dev/null)
+if ! echo "$CSV" | grep -q "worktree"; then
+    echo "✗ CSV format invalid"
+    exit 1
+fi
+
+echo "✓ Report generation in all formats works"

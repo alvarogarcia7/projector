@@ -1,0 +1,45 @@
+#!/bin/bash
+# Check: Test JSON, CSV, and Table output formats
+set -e
+
+echo "Testing output formats..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+cleanup() {
+    rm -f "$TEST_DB"
+}
+trap cleanup EXIT
+
+# Setup test data
+uv run proj init > /dev/null
+uv run proj project add test-project > /dev/null
+uv run proj worktree add test-project main > /dev/null
+uv run proj check add test-project test-check > /dev/null
+
+# Test: Table format
+echo "  Testing: report --format table"
+uv run proj report test-project --format table > /dev/null || {
+    echo "✗ Table format failed"
+    exit 1
+}
+
+# Test: JSON format
+echo "  Testing: report --format json"
+JSON_OUTPUT=$(uv run proj report test-project --format json 2>/dev/null)
+if ! echo "$JSON_OUTPUT" | grep -q "\["; then
+    echo "✗ JSON format output invalid"
+    exit 1
+fi
+
+# Test: CSV format
+echo "  Testing: report --format csv"
+CSV_OUTPUT=$(uv run proj report test-project --format csv 2>/dev/null)
+if ! echo "$CSV_OUTPUT" | grep -q "worktree"; then
+    echo "✗ CSV format output invalid"
+    exit 1
+fi
+
+echo "✓ All output formats working correctly"

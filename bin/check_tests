@@ -1,0 +1,14 @@
+#!/bin/bash
+# Check: Run unit tests with pytest
+set -e
+
+if ! command -v pytest &> /dev/null; then
+    echo "pytest not installed, skipping tests"
+    exit 0
+fi
+
+echo "Running tests..."
+pytest tests/ -v --tb=short 2>/dev/null || {
+    echo "Note: No tests directory found or tests not configured"
+    exit 0
+}

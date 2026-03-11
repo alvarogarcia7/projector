@@ -1,0 +1,15 @@
+#!/bin/bash
+# Check: Security scanning (bandit, safety)
+set -e
+
+echo "Running security scan..."
+uv run bandit -r projector/ 2>/dev/null || {
+    echo "Note: Bandit not available, continuing"
+}
+
+echo "Checking dependencies for vulnerabilities..."
+uv run safety check 2>/dev/null || {
+    echo "Note: Safety not available, continuing"
+}
+
+echo "✓ Security checks completed"

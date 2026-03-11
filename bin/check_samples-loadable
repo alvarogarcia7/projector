@@ -1,0 +1,41 @@
+#!/bin/bash
+# Check: Verify YAML samples are loadable
+set -e
+
+echo "Testing YAML sample loading..."
+
+# Create temporary test database
+TEST_DB="/tmp/projector-test-$$.db"
+export PROJECTOR_DB="$TEST_DB"
+
+cleanup() {
+    rm -f "$TEST_DB"
+}
+trap cleanup EXIT
+
+# Initialize database
+uv run proj init > /dev/null
+
+# Test: Load minimal examples
+echo "  Loading: samples/minimal-examples.yaml"
+uv run proj configure --file samples/minimal-examples.yaml > /dev/null || {
+    echo "✗ Failed to load minimal-examples.yaml"
+    exit 1
+}
+
+# Test: Load full-stack-app
+echo "  Loading: samples/full-stack-app.yaml"
+uv run proj configure --file samples/full-stack-app.yaml > /dev/null || {
+    echo "✗ Failed to load full-stack-app.yaml"
+    exit 1
+}
+
+# Verify projects were loaded
+echo "  Verifying projects loaded..."
+PROJ_COUNT=$(uv run proj project list 2>/dev/null | wc -l)
+if [ "$PROJ_COUNT" -lt 2 ]; then
+    echo "✗ Projects not properly loaded"
+    exit 1
+fi
+
+echo "✓ All YAML samples load successfully"

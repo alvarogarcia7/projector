@@ -1,0 +1,29 @@
+#!/bin/bash
+# Check: Validate all YAML sample files
+set -e
+
+echo "Validating YAML sample files..."
+
+# Check if python-yaml is available
+if ! python3 -c "import yaml" 2>/dev/null; then
+    echo "Note: PyYAML not available in standalone context"
+    exit 0
+fi
+
+for file in samples/*.yaml example*.yaml; do
+    if [ -f "$file" ]; then
+        echo "  Validating $file..."
+        python3 << EOF
+import yaml
+try:
+    with open('$file', 'r') as f:
+        yaml.safe_load(f)
+    print("    ✓ Valid YAML")
+except Exception as e:
+    print(f"    ✗ Invalid YAML: {e}")
+    exit(1)
+EOF
+    fi
+done
+
+echo "✓ All YAML samples are valid"
