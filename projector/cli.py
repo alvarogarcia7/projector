@@ -3,6 +3,22 @@
 from typing import Optional, List
 import typer
 from .commands import init, project, worktree, check, log, status, report, sync
+from .config import get_project_from_config, save_project_config
+
+
+def resolve_project(project_arg: Optional[str]) -> str:
+    """Resolve project name from argument or config."""
+    if project_arg:
+        return project_arg
+
+    config_project = get_project_from_config()
+    if config_project:
+        return config_project
+
+    typer.echo("Error: Project name required. Either:")
+    typer.echo("  1. Provide project name as argument: proj status my-app")
+    typer.echo("  2. Save project config: proj config set my-app")
+    raise typer.Exit(1)
 
 app = typer.Typer(
     help="Projector — Track software project health across machines",
@@ -111,7 +127,7 @@ def check_restore(project: str, name: str):
 
 
 # Log command
-@app.command()
+@app.command(name="log")
 def log_commit(
     project: str,
     worktree: str,
@@ -125,26 +141,28 @@ def log_commit(
 
 
 # Status command
-@app.command()
+@app.command(name="status")
 def status_cmd(
-    project: str,
+    project: Optional[str] = typer.Argument(None),
     worktree: Optional[str] = typer.Argument(None),
     sha: Optional[str] = typer.Argument(None),
     show_archived: bool = typer.Option(False, "--show-archived"),
 ):
     """Show project status."""
+    project = resolve_project(project)
     status.status_command(project, worktree=worktree, sha=sha, show_archived=show_archived)
 
 
 # Report command
-@app.command()
+@app.command(name="report")
 def report_cmd(
-    project: str,
+    project: Optional[str] = typer.Argument(None),
     format: str = typer.Option("table", "--format", "-f"),
     worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
     since: Optional[str] = typer.Option(None, "--since", "-s"),
 ):
     """Generate a report of check results."""
+    project = resolve_project(project)
     report.report_command(project, format=format, worktree=worktree, since=since)
 
 
@@ -162,6 +180,39 @@ def sync_import(db_path: str):
 def sync_export(output: Optional[str] = typer.Option(None, "--output", "-o")):
     """Export the local database."""
     sync.export_command(output=output)
+
+
+# Config commands
+config_app = typer.Typer(help="Manage local configuration")
+app.add_typer(config_app, name="config")
+
+@config_app.command("set")
+def config_set(project: str):
+    """Set the default project for this directory."""
+    save_project_config(project)
+    typer.echo(f"✓ Default project set to '{project}'")
+
+
+@config_app.command("get")
+def config_get():
+    """Show the default project for this directory."""
+    project = get_project_from_config()
+    if project:
+        typer.echo(f"Default project: {project}")
+    else:
+        typer.echo("No default project set")
+
+
+@config_app.command("clear")
+def config_clear():
+    """Clear the default project for this directory."""
+    from pathlib import Path
+    config_file = Path.cwd() / ".projector-config"
+    if config_file.exists():
+        config_file.unlink()
+        typer.echo("✓ Default project cleared")
+    else:
+        typer.echo("No default project configured")
 
 
 if __name__ == "__main__":

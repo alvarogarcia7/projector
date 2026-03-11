@@ -27,3 +27,30 @@ def get_or_create_global_db_dir() -> Path:
 def is_local_db(db_path: Path) -> bool:
     """Check if a database is a local (in-repo) database."""
     return db_path.name == ".projector.db" and db_path.parent == Path.cwd()
+
+
+def has_local_projector_db() -> bool:
+    """Check if current directory has a local projector database."""
+    return (Path.cwd() / ".projector.db").exists()
+
+
+def get_project_from_config() -> str:
+    """
+    Try to detect the project name from .projector-config in current directory.
+    Returns the project name or None if not found.
+    """
+    config_file = Path.cwd() / ".projector-config"
+    if config_file.exists():
+        try:
+            with open(config_file) as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+
+
+def save_project_config(project_name: str) -> None:
+    """Save the current project name to .projector-config in current directory."""
+    config_file = Path.cwd() / ".projector-config"
+    with open(config_file, "w") as f:
+        f.write(project_name)
