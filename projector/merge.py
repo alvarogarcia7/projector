@@ -2,7 +2,8 @@
 
 import sqlite3
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
+
 from .db import Database
 
 
@@ -78,15 +79,23 @@ class MergeManager:
                     ).fetchone()
                     if local_proj[0] and proj["updated_at"] != local_proj[0]:
                         self.stats["conflicts"] += 1
-                        self._log_conflict("projects", existing[0],
-                                           f"Kept local version (updated at {local_proj[0]})")
+                        self._log_conflict(
+                            "projects",
+                            existing[0],
+                            f"Kept local version (updated at {local_proj[0]})",
+                        )
             else:
                 # Insert new project
                 local_cursor.execute(
                     """INSERT INTO projects (name, description, repo_path, created_at, updated_at)
                        VALUES (?, ?, ?, ?, ?)""",
-                    (proj["name"], proj["description"], proj["repo_path"],
-                     proj["created_at"], proj["updated_at"]),
+                    (
+                        proj["name"],
+                        proj["description"],
+                        proj["repo_path"],
+                        proj["created_at"],
+                        proj["updated_at"],
+                    ),
                 )
                 self.stats["rows_received"] += 1
 
@@ -153,14 +162,22 @@ class MergeManager:
                         (check["archived_at"], existing[0]),
                     )
                     self.stats["conflicts"] += 1
-                    self._log_conflict("checks", existing[0],
-                                       "Propagated archive status from foreign DB")
+                    self._log_conflict(
+                        "checks", existing[0], "Propagated archive status from foreign DB"
+                    )
             else:
                 local_cursor.execute(
                     """INSERT INTO checks (project_id, name, description, mandatory, archived, archived_at, created_at)
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (project_id[0], check["name"], check["description"],
-                     check["mandatory"], check["archived"], check["archived_at"], check["created_at"]),
+                    (
+                        project_id[0],
+                        check["name"],
+                        check["description"],
+                        check["mandatory"],
+                        check["archived"],
+                        check["archived_at"],
+                        check["created_at"],
+                    ),
                 )
                 self.stats["rows_received"] += 1
 
@@ -202,14 +219,23 @@ class MergeManager:
                 # Check for conflict (different logged_at)
                 if commit["logged_at"] and existing[1] and commit["logged_at"] != existing[1]:
                     self.stats["conflicts"] += 1
-                    self._log_conflict("commits", existing[0],
-                                       f"Kept newer entry (local: {existing[1]}, foreign: {commit['logged_at']})")
+                    self._log_conflict(
+                        "commits",
+                        existing[0],
+                        f"Kept newer entry (local: {existing[1]}, foreign: {commit['logged_at']})",
+                    )
             else:
                 local_cursor.execute(
                     """INSERT INTO commits (worktree_id, sha, message, author, logged_at, machine_id)
                        VALUES (?, ?, ?, ?, ?, ?)""",
-                    (worktree_id[0], commit["sha"], commit["message"],
-                     commit["author"], commit["logged_at"], commit["machine_id"]),
+                    (
+                        worktree_id[0],
+                        commit["sha"],
+                        commit["message"],
+                        commit["author"],
+                        commit["logged_at"],
+                        commit["machine_id"],
+                    ),
                 )
                 self.stats["rows_received"] += 1
 
@@ -271,8 +297,14 @@ class MergeManager:
                 local_cursor.execute(
                     """INSERT INTO check_results (commit_id, check_id, status, comment, logged_at, machine_id)
                        VALUES (?, ?, ?, ?, ?, ?)""",
-                    (commit_id[0], check_id[0], result["status"],
-                     result["comment"], result["logged_at"], result["machine_id"]),
+                    (
+                        commit_id[0],
+                        check_id[0],
+                        result["status"],
+                        result["comment"],
+                        result["logged_at"],
+                        result["machine_id"],
+                    ),
                 )
                 self.stats["rows_received"] += 1
 
@@ -282,8 +314,14 @@ class MergeManager:
         local_cursor.execute(
             """INSERT INTO sync_log (synced_at, remote, direction, rows_sent, rows_received, conflicts)
                VALUES (?, ?, ?, ?, ?, ?)""",
-            (datetime.now(), remote, direction, self.stats["rows_sent"],
-             self.stats["rows_received"], self.stats["conflicts"]),
+            (
+                datetime.now(),
+                remote,
+                direction,
+                self.stats["rows_sent"],
+                self.stats["rows_received"],
+                self.stats["conflicts"],
+            ),
         )
         self.local_db.commit()
 

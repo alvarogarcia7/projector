@@ -1,16 +1,30 @@
 """Projector CLI entry point using Typer."""
 
-from typing import Optional, List
+from typing import List, Optional
+
 import typer
-from .commands import init, project, worktree, check, log, status, report, sync, run, configure, init_checks
+
+from .commands import (
+    check,
+    configure,
+    init,
+    init_checks,
+    log,
+    project,
+    report,
+    run,
+    status,
+    sync,
+    worktree,
+)
 from .config import (
-    get_project_from_config,
-    save_project_config,
-    get_path_config,
-    save_path_config,
-    clear_path_config,
     apply_path_config,
+    clear_path_config,
     get_checks_bin_path,
+    get_path_config,
+    get_project_from_config,
+    save_path_config,
+    save_project_config,
 )
 
 
@@ -28,10 +42,11 @@ def resolve_project(project_arg: Optional[str]) -> str:
     typer.echo("  2. Save project config: proj config set my-app")
     raise typer.Exit(1)
 
+
 app = typer.Typer(
-    help="Projector — Track software project health across machines",
-    no_args_is_help=True
+    help="Projector — Track software project health across machines", no_args_is_help=True
 )
+
 
 # Top-level commands
 @app.command(name="init")
@@ -58,6 +73,7 @@ def init_checks_cmd(
 # Project commands
 project_app = typer.Typer(help="Manage projects")
 app.add_typer(project_app, name="project")
+
 
 @project_app.command("add")
 def project_add(
@@ -91,6 +107,7 @@ def project_remove(name: str, yes: bool = typer.Option(False, "--yes", "-y")):
 worktree_app = typer.Typer(help="Manage worktrees")
 app.add_typer(worktree_app, name="worktree")
 
+
 @worktree_app.command("add")
 def worktree_add(
     project: str,
@@ -116,6 +133,7 @@ def worktree_remove(project: str, name: str, yes: bool = typer.Option(False, "--
 # Check commands
 check_app = typer.Typer(help="Manage checks")
 app.add_typer(check_app, name="check")
+
 
 @check_app.command("add")
 def check_add(
@@ -206,6 +224,7 @@ def report_cmd(
 sync_app = typer.Typer(help="Sync databases")
 app.add_typer(sync_app, name="sync")
 
+
 @sync_app.command("import")
 def sync_import(db_path: str):
     """Import a foreign database."""
@@ -221,6 +240,7 @@ def sync_export(output: Optional[str] = typer.Option(None, "--output", "-o")):
 # Config commands
 config_app = typer.Typer(help="Manage local configuration")
 app.add_typer(config_app, name="config")
+
 
 @config_app.command("set")
 def config_set(project: str):
@@ -243,6 +263,7 @@ def config_get():
 def config_clear():
     """Clear the default project for this directory."""
     from pathlib import Path
+
     config_file = Path.cwd() / ".projector-config"
     if config_file.exists():
         config_file.unlink()
@@ -267,6 +288,7 @@ def config_path_set(bin_path: Optional[str] = typer.Argument(None)):
 
     # Verify the path exists
     from pathlib import Path
+
     if not Path(bin_path).exists():
         typer.echo(f"Error: Path does not exist: {bin_path}")
         raise typer.Exit(1)
@@ -295,7 +317,7 @@ def config_path_apply():
     if path:
         typer.echo(f"✓ Added to PATH: {path}")
         typer.echo("Tip: Add to your shell profile to make it permanent:")
-        typer.echo(f"  export PATH=\"{path}:$PATH\"")
+        typer.echo(f'  export PATH="{path}:$PATH"')
     else:
         typer.echo("No checks bin path configured")
         typer.echo("Use 'proj config path-set' first")

@@ -1,16 +1,18 @@
 """Run checks and record execution results."""
 
-import subprocess
-import time
 import json
 import socket
+import subprocess
+import time
 from datetime import datetime
 from typing import Optional
+
 import typer
 from rich.console import Console
+
+from ..config import apply_path_config
 from ..db import Database
 from ..git import get_git_info
-from ..config import apply_path_config
 
 console = Console()
 
@@ -92,7 +94,9 @@ def run_checks(
     console.print(f"  Message:  {message or '(none)'}\n")
 
     # Get checks to run
-    query = "SELECT id, name, mandatory FROM checks WHERE project_id = ? AND archived = 0 ORDER BY name"
+    query = (
+        "SELECT id, name, mandatory FROM checks WHERE project_id = ? AND archived = 0 ORDER BY name"
+    )
     params = [proj["id"]]
     if check:
         query += " AND name = ?"
@@ -178,7 +182,13 @@ def run_checks(
             if existing_result:
                 db.execute(
                     "UPDATE check_results SET status = ?, comment = ?, logged_at = ?, machine_id = ? WHERE id = ?",
-                    (check_status, comment, datetime.now(), socket.gethostname(), existing_result["id"]),
+                    (
+                        check_status,
+                        comment,
+                        datetime.now(),
+                        socket.gethostname(),
+                        existing_result["id"],
+                    ),
                 )
             else:
                 db.insert_and_get_id(
@@ -195,13 +205,15 @@ def run_checks(
 
             console.print(f"{icon} ({elapsed:.2f}s)")
 
-            results.append({
-                "name": check_name,
-                "status": check_status,
-                "exit_code": exit_code,
-                "time": elapsed,
-                "mandatory": mandatory,
-            })
+            results.append(
+                {
+                    "name": check_name,
+                    "status": check_status,
+                    "exit_code": exit_code,
+                    "time": elapsed,
+                    "mandatory": mandatory,
+                }
+            )
 
             if mandatory and exit_code != 0:
                 failed_mandatory = True
@@ -276,7 +288,9 @@ def run_checks(
         failed = sum(1 for r in results if r["status"] == "fail")
         total_time = sum(r["time"] for r in results)
 
-        console.print(f"[bold]Results:[/bold] {passed} passed, {failed} failed (total: {total_time:.2f}s)")
+        console.print(
+            f"[bold]Results:[/bold] {passed} passed, {failed} failed (total: {total_time:.2f}s)"
+        )
 
     # Exit with error if mandatory check failed
     if failed_mandatory:

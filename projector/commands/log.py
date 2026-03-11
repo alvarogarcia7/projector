@@ -1,11 +1,13 @@
 """Log commit check results."""
 
-from typing import Optional, List
+import socket
+from datetime import datetime
+from typing import List, Optional
+
 import typer
 from rich.console import Console
-from rich.prompt import Prompt, Confirm
-from datetime import datetime
-import socket
+from rich.prompt import Confirm, Prompt
+
 from ..db import Database
 from ..git import get_git_info
 

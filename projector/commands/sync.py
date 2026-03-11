@@ -1,10 +1,12 @@
 """Database sync commands (import and export)."""
 
-from pathlib import Path
 import shutil
+from pathlib import Path
 from typing import Optional
+
 import typer
 from rich.console import Console
+
 from ..db import Database
 from ..merge import MergeManager
 

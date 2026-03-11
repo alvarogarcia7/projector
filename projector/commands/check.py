@@ -1,10 +1,12 @@
 """Check management commands."""
 
+from datetime import datetime
 from typing import Optional
+
 import typer
 from rich.console import Console
 from rich.table import Table
-from datetime import datetime
+
 from ..db import Database
 
 console = Console()
@@ -97,7 +99,9 @@ def archive_check(project: str, name: str) -> None:
         console.print(f"[red]✗[/red] Project '{project}' not found")
         raise typer.Exit(1)
 
-    check = db.fetchone("SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name))
+    check = db.fetchone(
+        "SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name)
+    )
     if not check:
         console.print(f"[red]✗[/red] Check '{name}' not found in project '{project}'")
         raise typer.Exit(1)
@@ -121,7 +125,9 @@ def restore_check(project: str, name: str) -> None:
         console.print(f"[red]✗[/red] Project '{project}' not found")
         raise typer.Exit(1)
 
-    check = db.fetchone("SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name))
+    check = db.fetchone(
+        "SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name)
+    )
     if not check:
         console.print(f"[red]✗[/red] Check '{name}' not found in project '{project}'")
         raise typer.Exit(1)

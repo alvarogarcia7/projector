@@ -1,10 +1,12 @@
 """Worktree management commands."""
 
+from datetime import datetime
 from typing import Optional
+
 import typer
 from rich.console import Console
 from rich.table import Table
-from datetime import datetime
+
 from ..db import Database
 
 console = Console()
@@ -72,7 +74,9 @@ def list_worktrees(project: str) -> None:
     console.print(table)
 
 
-def remove_worktree(project: str, name: str, confirm: bool = typer.Option(False, "--yes", "-y")) -> None:
+def remove_worktree(
+    project: str, name: str, confirm: bool = typer.Option(False, "--yes", "-y")
+) -> None:
     """Remove a worktree from a project."""
     db = Database()
     db.init_schema()
@@ -82,13 +86,17 @@ def remove_worktree(project: str, name: str, confirm: bool = typer.Option(False,
         console.print(f"[red]✗[/red] Project '{project}' not found")
         raise typer.Exit(1)
 
-    wt = db.fetchone("SELECT id FROM worktrees WHERE project_id = ? AND name = ?", (proj["id"], name))
+    wt = db.fetchone(
+        "SELECT id FROM worktrees WHERE project_id = ? AND name = ?", (proj["id"], name)
+    )
     if not wt:
         console.print(f"[red]✗[/red] Worktree '{name}' not found in project '{project}'")
         raise typer.Exit(1)
 
     if not confirm:
-        console.print(f"[yellow]This will remove worktree '{name}' and all associated commits and results.[/yellow]")
+        console.print(
+            f"[yellow]This will remove worktree '{name}' and all associated commits and results.[/yellow]"
+        )
         if not typer.confirm("Continue?"):
             console.print("Cancelled")
             return

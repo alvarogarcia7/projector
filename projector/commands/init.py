@@ -1,9 +1,11 @@
 """Initialize database command."""
 
 from pathlib import Path
+
 from rich.console import Console
-from ..db import Database
+
 from ..config import get_or_create_global_db_dir
+from ..db import Database
 
 console = Console()
 

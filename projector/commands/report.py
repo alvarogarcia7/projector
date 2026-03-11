@@ -2,9 +2,11 @@
 
 import json
 from typing import Optional
+
 import typer
 from rich.console import Console
 from rich.table import Table
+
 from ..db import Database
 
 console = Console()
@@ -107,20 +109,22 @@ def _output_csv(rows):
     import csv
     import sys
 
-    writer = csv.DictWriter(sys.stdout, fieldnames=[
-        "worktree", "sha", "check", "status", "comment", "logged_at"
-    ])
+    writer = csv.DictWriter(
+        sys.stdout, fieldnames=["worktree", "sha", "check", "status", "comment", "logged_at"]
+    )
     writer.writeheader()
 
     for row in rows:
-        writer.writerow({
-            "worktree": row["worktree_name"],
-            "sha": row["sha"],
-            "check": row["check_name"],
-            "status": row["status"],
-            "comment": row["comment"] or "",
-            "logged_at": row["logged_at"],
-        })
+        writer.writerow(
+            {
+                "worktree": row["worktree_name"],
+                "sha": row["sha"],
+                "check": row["check_name"],
+                "status": row["status"],
+                "comment": row["comment"] or "",
+                "logged_at": row["logged_at"],
+            }
+        )
 
 
 def _output_json(rows):
@@ -135,14 +139,16 @@ def _output_json(rows):
             except json.JSONDecodeError:
                 details = {"raw_comment": row["comment"]}
 
-        data.append({
-            "worktree": row["worktree_name"],
-            "sha": row["sha"],
-            "check": row["check_name"],
-            "status": row["status"],
-            "details": details,
-            "logged_at": row["logged_at"],
-        })
+        data.append(
+            {
+                "worktree": row["worktree_name"],
+                "sha": row["sha"],
+                "check": row["check_name"],
+                "status": row["status"],
+                "details": details,
+                "logged_at": row["logged_at"],
+            }
+        )
 
     console.print(json.dumps(data, indent=2))
 

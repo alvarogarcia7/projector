@@ -1,12 +1,14 @@
 """Configure projects and checks from YAML files."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
 import typer
-from rich.console import Console
 import yaml
+from rich.console import Console
+
 from ..db import Database
-from datetime import datetime
 
 console = Console()
 
@@ -65,8 +67,7 @@ def configure_from_file(
 
         if not config_path:
             console.print(
-                "[red]✗[/red] No configuration file found. "
-                "Specify with --file or create one at:"
+                "[red]✗[/red] No configuration file found. Specify with --file or create one at:"
             )
             for candidate in candidates:
                 console.print(f"  {candidate}")
@@ -88,7 +89,9 @@ def configure_from_file(
 
     # Validate structure
     if not isinstance(config, dict) or "projects" not in config:
-        console.print("[red]✗[/red] Invalid config format. Expected 'projects:' key with list of projects")
+        console.print(
+            "[red]✗[/red] Invalid config format. Expected 'projects:' key with list of projects"
+        )
         raise typer.Exit(1)
 
     projects = config.get("projects", [])
