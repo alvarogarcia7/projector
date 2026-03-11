@@ -66,7 +66,7 @@ def _show_latest_status(db: Database, project_name: str, project_id: int, show_a
     table.add_column("sha", style="dim")
 
     for check in checks:
-        style = "bold" if check["mandatory"] else "normal"
+        style = "bold" if check["mandatory"] else ""
         table.add_column(check["name"], style=style)
 
     # Add rows
@@ -145,7 +145,7 @@ def _show_worktree_history(db: Database, project_id: int, worktree_name: str, sh
     table.add_column("logged at", style="dim")
 
     for check in checks:
-        style = "bold" if check["mandatory"] else "normal"
+        style = "bold" if check["mandatory"] else ""
         table.add_column(check["name"], style=style)
 
     # Add rows
