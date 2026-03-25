@@ -118,6 +118,23 @@ class Database:
             conflict_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             resolution TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS command_cache (
+            id INTEGER PRIMARY KEY,
+            project_id INTEGER NOT NULL,
+            worktree_id INTEGER NOT NULL,
+            command TEXT NOT NULL,
+            files_hash TEXT NOT NULL,
+            stdout TEXT,
+            stderr TEXT,
+            exit_code INTEGER NOT NULL,
+            execution_time REAL NOT NULL,
+            cached_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            machine_id TEXT,
+            FOREIGN KEY (project_id) REFERENCES projects(id),
+            FOREIGN KEY (worktree_id) REFERENCES worktrees(id),
+            UNIQUE(project_id, worktree_id, command, files_hash)
+        );
         """)
 
         conn.commit()

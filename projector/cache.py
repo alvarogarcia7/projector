@@ -1,0 +1,132 @@
+"""Command execution cache for runner."""
+
+import hashlib
+import subprocess
+from typing import Optional
+
+
+def get_git_changed_files_hash() -> Optional[str]:
+    """
+    Compute SHA256 hash based on git HEAD and any modified/untracked files.
+    For a clean working directory, returns the HEAD SHA.
+    For modified files, computes a hash combining HEAD SHA and file contents.
+    Returns None if not in a git repo or on error.
+    """
+    try:
+        head_result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        head_sha = head_result.stdout.strip()
+
+        status_result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        status_output = status_result.stdout.strip()
+
+        if not status_output:
+            return head_sha
+
+        hasher = hashlib.sha256()
+        hasher.update(head_sha.encode())
+
+        files_result = subprocess.run(
+            ["git", "ls-files", "-m", "-o", "--exclude-standard"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        changed_files = [f for f in files_result.stdout.strip().split("\n") if f]
+
+        for filepath in sorted(changed_files):
+            try:
+                with open(filepath, "rb") as f:
+                    hasher.update(filepath.encode())
+                    hasher.update(f.read())
+            except (FileNotFoundError, PermissionError, IsADirectoryError):
+                pass
+
+        return hasher.hexdigest()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def get_cache_entry(db, project_id: int, worktree_id: int, command: str, files_hash: str) -> Optional[dict]:
+    """
+    Retrieve cached command execution result if available.
+    Returns None if no cache entry exists.
+    """
+    return db.fetchone(
+        """
+        SELECT stdout, stderr, exit_code, execution_time, cached_at
+        FROM command_cache
+        WHERE project_id = ? AND worktree_id = ? AND command = ? AND files_hash = ?
+        ORDER BY cached_at DESC
+        LIMIT 1
+        """,
+        (project_id, worktree_id, command, files_hash),
+    )
+
+
+def save_cache_entry(
+    db,
+    project_id: int,
+    worktree_id: int,
+    command: str,
+    files_hash: str,
+    stdout: str,
+    stderr: str,
+    exit_code: int,
+    execution_time: float,
+    machine_id: str,
+) -> None:
+    """Save a command execution result to cache."""
+    from datetime import datetime
+
+    existing = db.fetchone(
+        """
+        SELECT id FROM command_cache
+        WHERE project_id = ? AND worktree_id = ? AND command = ? AND files_hash = ?
+        """,
+        (project_id, worktree_id, command, files_hash),
+    )
+
+    if existing:
+        db.execute(
+            """
+            UPDATE command_cache
+            SET stdout = ?, stderr = ?, exit_code = ?, execution_time = ?, cached_at = ?, machine_id = ?
+            WHERE id = ?
+            """,
+            (stdout, stderr, exit_code, execution_time, datetime.now(), machine_id, existing["id"]),
+        )
+    else:
+        db.insert_and_get_id(
+            "command_cache",
+            project_id=project_id,
+            worktree_id=worktree_id,
+            command=command,
+            files_hash=files_hash,
+            stdout=stdout,
+            stderr=stderr,
+            exit_code=exit_code,
+            execution_time=execution_time,
+            cached_at=datetime.now(),
+            machine_id=machine_id,
+        )
+    db.commit()
+
+
+def clear_cache_entry(db, project_id: int, worktree_id: int, command: str) -> None:
+    """Clear all cache entries for a specific command."""
+    db.execute(
+        "DELETE FROM command_cache WHERE project_id = ? AND worktree_id = ? AND command = ?",
+        (project_id, worktree_id, command),
+    )
+    db.commit()

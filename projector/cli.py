@@ -13,6 +13,7 @@ from .commands import (
     project,
     report,
     run,
+    runner,
     status,
     sync,
     worktree,
@@ -178,6 +179,23 @@ def run_cmd(
     """Run checks and record results."""
     project = resolve_project(project)
     run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run)
+
+
+# Runner command
+@app.command(name="runner", context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def runner_cmd(
+    ctx: typer.Context,
+    project: Optional[str] = typer.Option(None, "--project", "-p"),
+    worktree: Optional[str] = typer.Option(None, "--worktree", "-w"),
+    bypass_cache: bool = typer.Option(False, "-B", help="Bypass cache and force re-execution"),
+):
+    """Run arbitrary command with caching."""
+    runner.runner_command(
+        command_args=ctx.args,
+        project=project,
+        worktree=worktree,
+        bypass_cache=bypass_cache,
+    )
 
 
 # Log command

@@ -121,6 +121,75 @@ scp user@machineA:~/.projector/projector.db /tmp/remote.db
 proj sync import /tmp/remote.db
 ```
 
+### Command Caching with Runner
+
+The `runner` command executes arbitrary commands with intelligent caching based on git repository state. Cached results are returned instantly on subsequent runs when the git state hasn't changed.
+
+```bash
+# Set up project and worktree
+uv run python3 -m projector.cli project add projector
+uv run python3 -m projector.cli worktree add projector eW688AmPx6UdoD4VCa7Fe
+
+# First run - executes the command and caches results
+uv run python3 -m projector.cli runner -p projector -w eW688AmPx6UdoD4VCa7Fe sleep 10
+# Takes 10 seconds
+
+# Second run - returns cached results instantly
+uv run python3 -m projector.cli runner -p projector -w eW688AmPx6UdoD4VCa7Fe sleep 10
+# Takes 0 seconds (cached)
+
+# Bypass cache - forces re-execution
+uv run python3 -m projector.cli runner -p projector -w eW688AmPx6UdoD4VCa7Fe -B sleep 10
+# Takes 10 seconds again (cache bypassed)
+```
+
+#### How Command Caching Works
+
+The caching system uses SHA256 hashing to identify git repository state:
+
+- **Clean repository**: Uses the git HEAD SHA as the cache key
+- **Modified files**: Computes a hash combining HEAD SHA and contents of all modified/untracked files
+
+The cache is automatically invalidated when:
+- Any tracked file is modified
+- New untracked files are added
+- You commit changes (new HEAD SHA)
+
+#### Runner Usage
+
+```bash
+proj runner [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -p, --project TEXT   Project name (or set with: proj config set PROJECT)
+  -w, --worktree TEXT  Worktree name (or auto-detected from git branch)
+  -B                   Bypass cache and force re-execution
+```
+
+#### Runner Examples
+
+```bash
+# Run build with caching (auto-detects project/worktree)
+proj runner make build
+
+# Run tests with caching
+proj runner npm test
+
+# Run with explicit project/worktree
+proj runner -p myproject -w main pytest tests/
+
+# Force re-execution (bypass cache)
+proj runner -B make clean build
+```
+
+#### When to Use Cache Bypass (`-B`)
+
+Use the `-B` flag when you need to:
+- Force a clean rebuild
+- Debug caching issues
+- Run commands that depend on external state (network, time, etc.)
+- Clear stale cache entries
+
 ## Concepts
 
 - **Project**: A named software project with defined checks

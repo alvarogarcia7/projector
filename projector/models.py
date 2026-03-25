@@ -77,3 +77,18 @@ class ConflictLog:
     row_id: int = 0
     conflict_at: Optional[datetime] = None
     resolution: Optional[str] = None
+
+
+@dataclass
+class CommandCache:
+    id: Optional[int] = None
+    project_id: int = 0
+    worktree_id: int = 0
+    command: str = ""
+    files_hash: str = ""
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    exit_code: int = 0
+    execution_time: float = 0.0
+    cached_at: Optional[datetime] = None
+    machine_id: Optional[str] = None
