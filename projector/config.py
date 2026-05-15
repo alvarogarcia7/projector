@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Optional
 
 
 def _get_projector_dir() -> Path:
@@ -157,3 +158,28 @@ def apply_path_config() -> None:
         path = os.environ.get("PATH", "")
         if bin_path not in path.split(":"):
             os.environ["PATH"] = f"{bin_path}:{path}"
+
+
+def get_log_level_from_config() -> Optional[str]:
+    """Get the log level from .projector/.env config file."""
+    env_data = _read_env()
+    return env_data.get("LOG_LEVEL")
+
+
+def get_resolved_log_level(cli_arg: Optional[str] = None) -> str:
+    """
+    Resolve log level with priority:
+      1. CLI argument (--log-level)
+      2. PROJECTOR_LOG_LEVEL environment variable
+      3. LOG_LEVEL in .projector/.env config file
+      4. Default: WARNING
+    """
+    if cli_arg:
+        return cli_arg.upper()
+    env_level = os.environ.get("PROJECTOR_LOG_LEVEL")
+    if env_level:
+        return env_level.upper()
+    config_level = get_log_level_from_config()
+    if config_level:
+        return config_level.upper()
+    return "WARNING"

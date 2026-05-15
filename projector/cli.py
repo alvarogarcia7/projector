@@ -1,5 +1,6 @@
 """Projector CLI entry point using Typer."""
 
+import logging
 from typing import List, Optional
 
 import typer
@@ -24,6 +25,7 @@ from .config import (
     get_checks_bin_path,
     get_path_config,
     get_project_from_config,
+    get_resolved_log_level,
     get_worktree_from_config,
     save_path_config,
     save_project_config,
@@ -59,6 +61,24 @@ def resolve_worktree(worktree_arg: Optional[str]) -> Optional[str]:
 app = typer.Typer(
     help="Projector — Track software project health across machines", no_args_is_help=True
 )
+
+
+@app.callback()
+def main(
+    ctx: typer.Context,
+    log_level: Optional[str] = typer.Option(
+        None,
+        "--log-level",
+        help="Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL",
+        envvar="PROJECTOR_LOG_LEVEL",
+    ),
+):
+    """Projector — Track software project health across machines."""
+    level = get_resolved_log_level(log_level)
+    logging.basicConfig(
+        level=getattr(logging, level, logging.WARNING),
+        format="%(levelname)s: %(message)s",
+    )
 
 
 # Top-level commands
