@@ -208,18 +208,228 @@ Cache remains valid even if these files change.
 4. **Cache Compression** - Reduce database size for large outputs
 5. **Selective Caching** - Per-command cache control
 
+## Implementation Details
+
+### Cache Key Computation Flow
+
+**File**: `projector/cache.py:get_git_changed_files_hash()`
+
+```python
+def get_git_changed_files_hash() -> Optional[str]:
+    # 1. Get HEAD commit SHA
+    head_sha = subprocess.run(["git", "rev-parse", "HEAD"], ...).stdout.strip()
+
+    # 2. Check if working directory is modified
+    status = subprocess.run(["git", "status", "--porcelain"], ...).stdout.strip()
+
+    # 3a. Clean working directory
+    if not status:
+        return head_sha  # Cache key = HEAD SHA only
+
+    # 3b. Modified files present
+    # Get list of changed/untracked files
+    changed_files = subprocess.run(
+        ["git", "ls-files", "-m", "-o", "--exclude-standard"],
+        ...
+    ).stdout.strip().split("\n")
+
+    # Filter by .projectorignore patterns
+    ignore_patterns = _read_projector_ignore()
+    changed_files = [f for f in changed_files
+                     if not _is_projector_ignored(f, ignore_patterns)]
+
+    # Compute hash
+    hasher = hashlib.sha256()
+    hasher.update(head_sha.encode())
+
+    for filepath in sorted(changed_files):
+        with open(filepath, "rb") as f:
+            hasher.update(filepath.encode())
+            hasher.update(f.read())
+
+    return hasher.hexdigest()
+```
+
+### Cache Entry Operations
+
+**Retrieve cached result** (`get_cache_entry`):
+```python
+def get_cache_entry(db, project_id: int, worktree_id: int,
+                   command: str, files_hash: str) -> Optional[dict]:
+    return db.fetchone(
+        """SELECT stdout, stderr, exit_code, execution_time, cached_at
+           FROM command_cache
+           WHERE project_id = ? AND worktree_id = ?
+                 AND command = ? AND files_hash = ?
+           ORDER BY cached_at DESC LIMIT 1""",
+        (project_id, worktree_id, command, files_hash)
+    )
+```
+
+**Save cached result** (`save_cache_entry`):
+```python
+def save_cache_entry(db, project_id: int, worktree_id: int, command: str,
+                    files_hash: str, stdout: str, stderr: str,
+                    exit_code: int, execution_time: float, machine_id: str):
+    # Check if entry exists
+    existing = db.fetchone(
+        "SELECT id FROM command_cache WHERE project_id = ? AND worktree_id = ? "
+        "AND command = ? AND files_hash = ?",
+        (project_id, worktree_id, command, files_hash)
+    )
+
+    if existing:
+        # Update existing entry
+        db.execute(
+            "UPDATE command_cache SET stdout = ?, stderr = ?, exit_code = ?, "
+            "execution_time = ?, cached_at = ?, machine_id = ? WHERE id = ?",
+            (stdout, stderr, exit_code, execution_time, datetime.now(),
+             machine_id, existing["id"])
+        )
+    else:
+        # Insert new entry
+        db.insert_and_get_id(
+            "command_cache",
+            project_id=project_id, worktree_id=worktree_id, command=command,
+            files_hash=files_hash, stdout=stdout, stderr=stderr,
+            exit_code=exit_code, execution_time=execution_time,
+            cached_at=datetime.now(), machine_id=machine_id
+        )
+    db.commit()
+```
+
+### Runner Command Integration
+
+**File**: `projector/commands/runner.py` (lines 91-163)
+
+```python
+# 1. Compute cache key
+files_hash = get_git_changed_files_hash()
+
+# 2. Check cache (unless -B flag set)
+if not bypass_cache and files_hash:
+    cache_entry = get_cache_entry(db, proj["id"], wt["id"],
+                                  command, files_hash)
+    if cache_entry:
+        # Return cached result
+        sys.stdout.write(cache_entry["stdout"])
+        sys.stderr.write(cache_entry["stderr"])
+        raise typer.Exit(cache_entry["exit_code"])
+
+# 3. Execute command
+result = subprocess.run(command, shell=True, capture_output=True, text=True)
+
+# 4. Save result to cache
+if files_hash:
+    save_cache_entry(db, proj["id"], wt["id"], command, files_hash,
+                    result.stdout, result.stderr, result.returncode,
+                    elapsed, socket.gethostname())
+```
+
+### Check Command Integration
+
+**File**: `projector/commands/run.py` (lines 49-370)
+
+```python
+# 1. Compute cache key once per run
+files_hash = get_git_changed_files_hash()
+
+# 2. For each check
+cache_key = f"check_{check_name}"
+if not bypass_cache and files_hash:
+    cache_entry = get_cache_entry(db, proj["id"], wt["id"],
+                                  cache_key, files_hash)
+    if cache_entry:
+        # Use cached result
+        continue
+
+# 3. Execute check and cache result
+save_cache_entry(db, proj["id"], wt["id"], cache_key, files_hash,
+                stdout, stderr, exit_code, elapsed, socket.gethostname())
+```
+
+### `.projectorignore` Implementation
+
+**File**: `projector/cache.py` (lines 14-28)
+
+```python
+def _read_projector_ignore() -> list:
+    """Read patterns from .projector/.projectorignore"""
+    ignore_path = Path.cwd() / ".projector" / ".projectorignore"
+    if not ignore_path.exists():
+        return []
+
+    patterns = []
+    with open(ignore_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):  # Skip comments and empty lines
+                patterns.append(line)
+    return patterns
+
+def _is_projector_ignored(filepath: str, patterns: list) -> bool:
+    """Check if filepath matches any pattern using fnmatch"""
+    return any(fnmatch.fnmatch(filepath, p) or
+               fnmatch.fnmatch(os.path.basename(filepath), p)
+               for p in patterns)
+```
+
+## Real-World Scenarios
+
+### Scenario 1: Unchanged Code
+```bash
+# At COMMIT1, run expensive command
+$ proj runner npm test
+# Takes 30 seconds, caches result with hash=COMMIT1_SHA
+
+# Same commit, no changes
+$ proj runner npm test
+# Cache hit! Returns result instantly
+```
+
+### Scenario 2: File Modifications
+```bash
+# Modify src/index.js
+$ proj runner npm test
+# Cache miss (file changed), executes and caches with hash=SHA256(COMMIT1 + index.js)
+
+# Fix a typo in .env (in .projectorignore)
+$ proj runner npm test
+# Cache hit! .env is ignored, so hash unchanged
+```
+
+### Scenario 3: Commit and Continue
+```bash
+# At COMMIT1 with file.js modified
+$ proj runner ./build.sh
+# Caches with hash=SHA256(COMMIT1 + file.js)
+
+# Commit changes (now at COMMIT2, clean working dir)
+$ proj runner ./build.sh
+# Cache miss (HEAD SHA changed from COMMIT1 to COMMIT2)
+# Executes again
+```
+
 ## Implementation Status
 
-- ✅ Core caching mechanism implemented
-- ✅ Integration with runner command
-- ✅ Integration with check command
-- ✅ .projectorignore support
-- ✅ Comprehensive test coverage (15 unit tests)
-- ✅ All 45 E2E tests passing
+- ✅ Core caching mechanism implemented (`projector/cache.py`)
+- ✅ Integration with runner command (`projector/commands/runner.py`)
+- ✅ Integration with check command (`projector/commands/run.py`)
+- ✅ `.projectorignore` support with fnmatch patterns
+- ✅ Composite database key for isolation
+- ✅ Cache bypass via `-B` flag
+- ✅ Comprehensive test coverage (15 unit + 45 E2E tests)
 - ✅ Linting clean (ruff)
-- ✅ Documentation complete
+- ✅ Debug logging throughout
+- ✅ Documentation in decision and verification documents
 
 ## Related Tasks
 
-- PROJ-1: Cache the execution result
-- PROJ-1.1: Caching both for runner and for checks
+- **PROJ-1**: Cache the execution result
+  - Status: Done
+  - Files: `projector/cache.py`, `projector/commands/runner.py`, `projector/db.py`
+
+- **PROJ-1.1**: Caching both for runner and for checks
+  - Status: Done
+  - Files: `projector/commands/run.py`, `tests/test_*.py`
+  - Features: `.projectorignore` support, check command caching
