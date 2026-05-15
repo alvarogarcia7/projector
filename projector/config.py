@@ -2,14 +2,52 @@
 
 import os
 from pathlib import Path
+from typing import Optional
+
+
+def _get_projector_dir() -> Path:
+    """Get the local .projector directory path."""
+    return Path.cwd() / ".projector"
+
+
+def _get_env_path() -> Path:
+    """Get the path to the .projector/.env file."""
+    return _get_projector_dir() / ".env"
+
+
+def _read_env() -> dict:
+    """Read .projector/.env file as key-value pairs."""
+    env_path = _get_env_path()
+    if not env_path.exists():
+        return {}
+    result = {}
+    try:
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    result[key.strip()] = value.strip()
+    except Exception:
+        pass
+    return result
+
+
+def _write_env(data: dict) -> None:
+    """Write key-value pairs to .projector/.env file."""
+    env_path = _get_env_path()
+    env_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(env_path, "w") as f:
+        for key, value in data.items():
+            f.write(f"{key}={value}\n")
 
 
 def get_db_path() -> Path:
     """
     Resolve the database path.
-    Local .projector.db takes precedence over global ~/.projector/projector.db
+    Local .projector/projector.db takes precedence over global ~/.projector/projector.db
     """
-    local_db = Path.cwd() / ".projector.db"
+    local_db = _get_projector_dir() / "projector.db"
     if local_db.exists():
         return local_db
 
@@ -26,27 +64,21 @@ def get_or_create_global_db_dir() -> Path:
 
 def is_local_db(db_path: Path) -> bool:
     """Check if a database is a local (in-repo) database."""
-    return db_path.name == ".projector.db" and db_path.parent == Path.cwd()
+    return db_path.name == "projector.db" and db_path.parent == _get_projector_dir()
 
 
 def has_local_projector_db() -> bool:
     """Check if current directory has a local projector database."""
-    return (Path.cwd() / ".projector.db").exists()
+    return (_get_projector_dir() / "projector.db").exists()
 
 
 def get_project_from_config() -> str:
     """
-    Try to detect the project name from .projector-config in current directory.
+    Try to detect the project name from .projector/.env in current directory.
     Returns the project name or None if not found.
     """
-    config_file = Path.cwd() / ".projector-config"
-    if config_file.exists():
-        try:
-            with open(config_file) as f:
-                return f.read().strip()
-        except Exception:
-            pass
-    return None
+    env_data = _read_env()
+    return env_data.get("PROJECT")
 
 
 def get_worktree_from_config() -> str:
@@ -65,10 +97,10 @@ def get_worktree_from_config() -> str:
 
 
 def save_project_config(project_name: str) -> None:
-    """Save the current project name to .projector-config in current directory."""
-    config_file = Path.cwd() / ".projector-config"
-    with open(config_file, "w") as f:
-        f.write(project_name)
+    """Save the current project name to .projector/.env in current directory."""
+    env_data = _read_env()
+    env_data["PROJECT"] = project_name
+    _write_env(env_data)
 
 
 def save_worktree_config(worktree_name: str) -> None:
@@ -94,31 +126,26 @@ def get_checks_bin_path() -> Path:
 
 def get_path_config() -> str:
     """
-    Get the configured checks bin path from .projector-path file.
+    Get the configured checks bin path from .projector/.env file.
     Returns the path or None if not configured.
     """
-    config_file = Path.cwd() / ".projector-path"
-    if config_file.exists():
-        try:
-            with open(config_file) as f:
-                return f.read().strip()
-        except Exception:
-            pass
-    return None
+    env_data = _read_env()
+    return env_data.get("CHECKS_BIN_PATH")
 
 
 def save_path_config(bin_path: str) -> None:
-    """Save the checks bin path to .projector-path in current directory."""
-    config_file = Path.cwd() / ".projector-path"
-    with open(config_file, "w") as f:
-        f.write(bin_path)
+    """Save the checks bin path to .projector/.env in current directory."""
+    env_data = _read_env()
+    env_data["CHECKS_BIN_PATH"] = bin_path
+    _write_env(env_data)
 
 
 def clear_path_config() -> None:
     """Clear the checks bin path configuration."""
-    config_file = Path.cwd() / ".projector-path"
-    if config_file.exists():
-        config_file.unlink()
+    env_data = _read_env()
+    if "CHECKS_BIN_PATH" in env_data:
+        del env_data["CHECKS_BIN_PATH"]
+        _write_env(env_data)
 
 
 def apply_path_config() -> None:
@@ -131,3 +158,28 @@ def apply_path_config() -> None:
         path = os.environ.get("PATH", "")
         if bin_path not in path.split(":"):
             os.environ["PATH"] = f"{bin_path}:{path}"
+
+
+def get_log_level_from_config() -> Optional[str]:
+    """Get the log level from .projector/.env config file."""
+    env_data = _read_env()
+    return env_data.get("LOG_LEVEL")
+
+
+def get_resolved_log_level(cli_arg: Optional[str] = None) -> str:
+    """
+    Resolve log level with priority:
+      1. CLI argument (--log-level)
+      2. PROJECTOR_LOG_LEVEL environment variable
+      3. LOG_LEVEL in .projector/.env config file
+      4. Default: WARNING
+    """
+    if cli_arg:
+        return cli_arg.upper()
+    env_level = os.environ.get("PROJECTOR_LOG_LEVEL")
+    if env_level:
+        return env_level.upper()
+    config_level = get_log_level_from_config()
+    if config_level:
+        return config_level.upper()
+    return "WARNING"

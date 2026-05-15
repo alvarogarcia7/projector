@@ -43,13 +43,15 @@ env/
 htmlcov/
 .tox/
 
-# Project databases and local config
+# Project databases and local config (legacy)
 .projector.db
 .projector.db-shm
 .projector.db-wal
 .projector-config
 .projector-worktree
 .projector-path
+# Project configuration and databases
+.projector/
 
 # Temporary files
 *.tmp

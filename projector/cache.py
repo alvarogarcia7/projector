@@ -1,8 +1,31 @@
 """Command execution cache for runner."""
 
+import fnmatch
 import hashlib
+import logging
+import os
 import subprocess
+from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+
+def _read_projector_ignore() -> list:
+    """Read patterns from .projector/.projectorignore file."""
+    ignore_path = Path.cwd() / ".projector" / ".projectorignore"
+    if not ignore_path.exists():
+        return []
+    try:
+        with open(ignore_path) as f:
+            return [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+    except Exception:
+        return []
+
+
+def _is_projector_ignored(filepath: str, patterns: list) -> bool:
+    """Check if a filepath matches any .projectorignore pattern."""
+    return any(fnmatch.fnmatch(filepath, p) or fnmatch.fnmatch(os.path.basename(filepath), p) for p in patterns)
 
 
 def get_git_changed_files_hash() -> Optional[str]:
@@ -12,7 +35,10 @@ def get_git_changed_files_hash() -> Optional[str]:
     For modified files, computes a hash combining HEAD SHA and file contents.
     Returns None if not in a git repo or on error.
     """
+    logger.debug("Computing git changed files hash for cache")
     try:
+        # Get HEAD SHA
+        logger.debug("Executing: git rev-parse HEAD")
         head_result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             capture_output=True,
@@ -20,7 +46,10 @@ def get_git_changed_files_hash() -> Optional[str]:
             check=True,
         )
         head_sha = head_result.stdout.strip()
+        logger.debug(f"HEAD SHA: {head_sha[:7]}")
 
+        # Check git status
+        logger.debug("Executing: git status --porcelain")
         status_result = subprocess.run(
             ["git", "status", "--porcelain"],
             capture_output=True,
@@ -31,11 +60,15 @@ def get_git_changed_files_hash() -> Optional[str]:
         status_output = status_result.stdout.strip()
 
         if not status_output:
+            logger.debug(f"Working directory clean, using HEAD SHA as hash: {head_sha[:7]}")
             return head_sha
 
+        # Working directory has changes, compute hash with file contents
+        logger.debug("Working directory has changes, computing hash with file contents")
         hasher = hashlib.sha256()
         hasher.update(head_sha.encode())
 
+        logger.debug("Executing: git ls-files -m -o --exclude-standard")
         files_result = subprocess.run(
             ["git", "ls-files", "-m", "-o", "--exclude-standard"],
             capture_output=True,
@@ -43,17 +76,33 @@ def get_git_changed_files_hash() -> Optional[str]:
             check=True,
         )
         changed_files = [f for f in files_result.stdout.strip().split("\n") if f]
+        logger.debug(f"Found {len(changed_files)} changed/untracked files")
 
+        ignore_patterns = _read_projector_ignore()
+        if ignore_patterns:
+            before = len(changed_files)
+            changed_files = [f for f in changed_files if not _is_projector_ignored(f, ignore_patterns)]
+            filtered = before - len(changed_files)
+            logger.debug(f".projectorignore filtered {filtered} file(s), {len(changed_files)} remain")
+
+        files_hashed = 0
         for filepath in sorted(changed_files):
             try:
                 with open(filepath, "rb") as f:
                     hasher.update(filepath.encode())
                     hasher.update(f.read())
-            except (FileNotFoundError, PermissionError, IsADirectoryError):
-                pass
+                    files_hashed += 1
+            except (FileNotFoundError, PermissionError, IsADirectoryError) as e:
+                logger.debug(f"Could not hash file {filepath}: {e}")
 
-        return hasher.hexdigest()
-    except (subprocess.CalledProcessError, FileNotFoundError):
+        final_hash = hasher.hexdigest()
+        logger.debug(f"Computed hash from HEAD + {files_hashed} file(s): {final_hash[:7]}")
+        return final_hash
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to compute git hash: {e}")
+        return None
+    except FileNotFoundError:
+        logger.error("git command not found. Is git installed and in PATH?")
         return None
 
 

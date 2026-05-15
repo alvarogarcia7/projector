@@ -4,13 +4,15 @@ title: Cache the execution result
 status: Done
 assignee: []
 created_date: '2026-03-25 10:32'
-completed_date: '2026-03-25'
+updated_date: '2026-05-15 15:53'
 labels: []
 dependencies: []
+ordinal: 1000
 ---
 
 ## Description
 
+<!-- SECTION:DESCRIPTION:BEGIN -->
 Implement command execution caching for the `runner` command that caches results based on git repository state. When running the same command without changing files, cached results should be returned instantly.
 
 ## Implementation Details
@@ -28,9 +30,18 @@ Implement command execution caching for the `runner` command that caches results
 ### Features:
 - Caches command stdout, stderr, exit code, and execution time
 - Uses SHA256 hash of git HEAD + modified files as cache key
+  - When a new commit is created, the system is able to detect which files have changed. In case COMMIT1+fileA modified = COMMIT2, the cache still is valid.
 - Automatic cache invalidation on file changes or new commits
 - `-B` flag to bypass cache and force re-execution
 - Auto-detects project and worktree from git state
+<!-- SECTION:DESCRIPTION:END -->
+
+## Validation
+
+- ✅ Linting: `uv run ruff check projector tests` - All checks passed
+- ✅ Tests: `uv run pytest tests -v` - 2/2 tests passed
+- ✅ CLI Integration: `proj runner --help` shows `-B` flag
+- ✅ Documentation: README.md updated with examples and usage
 
 ## Final Summary
 
@@ -54,10 +65,3 @@ uv run python3 -m projector.cli runner -p projector -w eW688AmPx6UdoD4VCa7Fe -B 
 
 All tests pass, linting clean, documentation added to README.md.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Validation
-
-- ✅ Linting: `uv run ruff check projector tests` - All checks passed
-- ✅ Tests: `uv run pytest tests -v` - 2/2 tests passed
-- ✅ CLI Integration: `proj runner --help` shows `-B` flag
-- ✅ Documentation: README.md updated with examples and usage

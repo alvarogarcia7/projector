@@ -1,5 +1,6 @@
 """Projector CLI entry point using Typer."""
 
+import logging
 from typing import List, Optional
 
 import typer
@@ -24,6 +25,7 @@ from .config import (
     get_checks_bin_path,
     get_path_config,
     get_project_from_config,
+    get_resolved_log_level,
     get_worktree_from_config,
     save_path_config,
     save_project_config,
@@ -56,9 +58,25 @@ def resolve_worktree(worktree_arg: Optional[str]) -> Optional[str]:
     return get_worktree_from_config()
 
 
-app = typer.Typer(
-    help="Projector — Track software project health across machines", no_args_is_help=True
-)
+app = typer.Typer(help="Projector — Track software project health across machines", no_args_is_help=True)
+
+
+@app.callback()
+def main(
+    ctx: typer.Context,
+    log_level: Optional[str] = typer.Option(
+        None,
+        "--log-level",
+        help="Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL",
+        envvar="PROJECTOR_LOG_LEVEL",
+    ),
+):
+    """Projector — Track software project health across machines."""
+    level = get_resolved_log_level(log_level)
+    logging.basicConfig(
+        level=getattr(logging, level, logging.WARNING),
+        format="%(levelname)s: %(message)s",
+    )
 
 
 # Top-level commands
@@ -85,7 +103,7 @@ def init_checks_cmd(
 
 
 # Project commands
-project_app = typer.Typer(help="Manage projects")
+project_app = typer.Typer(help="Manage projects", no_args_is_help=True)
 app.add_typer(project_app, name="project")
 
 
@@ -118,7 +136,7 @@ def project_remove(name: str, yes: bool = typer.Option(False, "--yes", "-y")):
 
 
 # Worktree commands
-worktree_app = typer.Typer(help="Manage worktrees")
+worktree_app = typer.Typer(help="Manage worktrees", no_args_is_help=True)
 app.add_typer(worktree_app, name="worktree")
 
 
@@ -145,7 +163,7 @@ def worktree_remove(project: str, name: str, yes: bool = typer.Option(False, "--
 
 
 # Check commands
-check_app = typer.Typer(help="Manage checks")
+check_app = typer.Typer(help="Manage checks", no_args_is_help=True)
 app.add_typer(check_app, name="check")
 
 
@@ -188,11 +206,12 @@ def run_cmd(
     worktree: Optional[str] = typer.Argument(None),
     check: Optional[str] = typer.Option(None, "--check", "-c"),
     dry_run: bool = typer.Option(False, "--dry-run"),
+    bypass_cache: bool = typer.Option(False, "-B", help="Bypass cache and force re-execution of all checks"),
 ):
     """Run checks and record results."""
     project = resolve_project(project)
     worktree = resolve_worktree(worktree)
-    run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run)
+    run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run, bypass_cache=bypass_cache)
 
 
 # Runner command
@@ -255,7 +274,7 @@ def report_cmd(
 
 
 # Sync commands
-sync_app = typer.Typer(help="Sync databases")
+sync_app = typer.Typer(help="Sync databases", no_args_is_help=True)
 app.add_typer(sync_app, name="sync")
 
 
@@ -272,7 +291,7 @@ def sync_export(output: Optional[str] = typer.Option(None, "--output", "-o")):
 
 
 # Config commands
-config_app = typer.Typer(help="Manage local configuration")
+config_app = typer.Typer(help="Manage local configuration", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 
 
@@ -347,9 +366,28 @@ def config_clear():
     """Clear the default project for this directory."""
     from pathlib import Path
 
-    config_file = Path.cwd() / ".projector-config"
-    if config_file.exists():
-        config_file.unlink()
+    # Read current config
+    env_path = Path.cwd() / ".projector" / ".env"
+    if env_path.exists():
+        # Remove PROJECT key from .env
+        env_data = {}
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    if key.strip() != "PROJECT":
+                        env_data[key.strip()] = value.strip()
+
+        # Rewrite without PROJECT key
+        if env_data:
+            env_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(env_path, "w") as f:
+                for key, value in env_data.items():
+                    f.write(f"{key}={value}\n")
+        else:
+            # Remove empty .env file
+            env_path.unlink()
         typer.echo("✓ Default project cleared")
     else:
         typer.echo("No default project configured")

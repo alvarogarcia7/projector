@@ -15,10 +15,10 @@ def init_command(local: bool = False) -> None:
     Initialize Projector database.
 
     By default creates ~/.projector/projector.db (global).
-    Use --local to create .projector.db in current directory (per-repo).
+    Use --local to create .projector/projector.db in current directory (per-repo).
     """
     if local:
-        db_path = Path.cwd() / ".projector.db"
+        db_path = Path.cwd() / ".projector" / "projector.db"
         db = Database(db_path)
         db.init_schema()
         console.print(f"[green]✓[/green] Local database initialized at {db_path}")

@@ -23,8 +23,8 @@ export XDG_CONFIG_HOME="${TEST_DIR}/.config"
 export XDG_DATA_HOME="${TEST_DIR}/.data"
 
 # Ensure projector is installed
-if ! command -v proj &> /dev/null; then
-    echo -e "${RED}✗ projector CLI not found in PATH${NC}"
+if [[ ! -f projector/cli.py ]]; then
+    echo -e "${RED}✗ python -m projector/cli.py not found in PATH${NC}"
     exit 1
 fi
 
@@ -56,9 +56,15 @@ cleanup() {
 
 trap cleanup EXIT
 
+# Get the project root directory
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Get the venv python interpreter
+VENV_PYTHON="${PROJECT_ROOT}/.venv/bin/python"
+
 # Helper function to run proj commands
 run_proj() {
-    proj "$@" 2>&1 || return $?
+    PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}" "${VENV_PYTHON}" -m projector.cli "$@" 2>&1 || return $?
 }
 
 # Helper function to assert command succeeds
@@ -104,6 +110,32 @@ echo -e "${BLUE}===============================================${NC}"
 echo "Test directory: ${TEST_DIR}"
 echo ""
 
+# Clean up any previous test projects from the global database and local database
+echo "Cleaning up previous test data..."
+
+# Remove the local database in the project root to ensure tests start fresh
+if [[ -d ".projector" ]]; then
+    rm -rf ".projector"
+fi
+
+# Also clean up SQLite lock files that might persist
+rm -f ".projector.db-shm" ".projector.db-wal" ".projector-worktree"
+
+# Also clean up the global database
+"${VENV_PYTHON}" -c "
+from pathlib import Path
+import sqlite3
+db_path = Path.home() / '.projector' / 'projector.db'
+if db_path.exists():
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.execute('DELETE FROM projects WHERE name = ?', ('test-app',))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+" 2>/dev/null || true
+
 # ==============================================================================
 # TEST 1: Database Initialization
 # ==============================================================================
@@ -112,8 +144,8 @@ log_test_start "Database Initialization"
 # Create a local database for testing
 assert_success "run_proj init --local" "Initialize local database"
 
-# Verify database file was created
-if [[ -f ".projector.db" ]]; then
+# Verify database file was created (now in .projector/projector.db)
+if [[ -f ".projector/projector.db" ]]; then
     log_success "Database file created locally"
 else
     log_error "Database file not created"
@@ -277,7 +309,7 @@ assert_success "run_proj status test-app main" \
     "Get worktree status for 'main'"
 
 # Check specific commit status
-assert_output_contains "run_proj status test-app main ${GIT_SHA}" "main" \
+assert_output_contains "run_proj status test-app main ${GIT_SHA}" "Commit:" \
     "Get specific commit status"
 
 echo ""
