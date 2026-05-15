@@ -13,6 +13,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
+from ..cache import clear_cache_entry, get_cache_entry, get_git_changed_files_hash, save_cache_entry
 from ..config import apply_path_config
 from ..db import Database
 from ..git import get_git_info
@@ -25,6 +26,7 @@ def run_checks(
     worktree: Optional[str] = typer.Argument(None),
     check: Optional[str] = typer.Option(None, "--check", "-c", help="Run specific check only"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would run without executing"),
+    bypass_cache: bool = False,
 ) -> None:
     """
     Run checks and record results.
@@ -33,12 +35,23 @@ def run_checks(
     Records execution status, exit code, and execution time.
     """
     logger = logging.getLogger(__name__)
-    logger.debug(f"run_checks() called with project={project}, worktree={worktree}, check={check}, dry_run={dry_run}")
+    logger.debug(
+        f"run_checks() called with project={project}, worktree={worktree}, "
+        f"check={check}, dry_run={dry_run}, bypass_cache={bypass_cache}"
+    )
 
     # Apply configured PATH for checks bin directory
     logger.debug("Applying PATH configuration")
     apply_path_config()
     logger.debug(f"PATH after apply_path_config: {os.environ.get('PATH', '(not set)')}")
+
+    # Compute git hash for caching
+    files_hash = get_git_changed_files_hash()
+    if not files_hash:
+        logger.warning("Could not compute git hash, running checks without cache")
+        bypass_cache = True
+    else:
+        logger.debug(f"Git state hash for cache: {files_hash[:7]}")
 
     db = Database()
     logger.debug(f"Database initialized at {db.db_path}")
@@ -178,6 +191,63 @@ def run_checks(
         # Get check command from database (if it exists)
         # For now, we'll use a convention: check_<name> as a shell command
         check_command = f"check_{check_name}"
+        cache_key = check_command
+
+        # Check cache before running
+        cache_entry = None
+        if bypass_cache:
+            if files_hash:
+                clear_cache_entry(db, proj["id"], wt["id"], cache_key)
+        elif files_hash:
+            cache_entry = get_cache_entry(db, proj["id"], wt["id"], cache_key, files_hash)
+
+        if cache_entry:
+            logger.info(f"Cache HIT for check '{check_name}' (cached at {cache_entry['cached_at']})")
+            exit_code = cache_entry["exit_code"]
+            elapsed = cache_entry["execution_time"]
+            check_status = "pass" if exit_code == 0 else "fail"
+            icon = "[green]✓[/green]" if exit_code == 0 else "[red]✗[/red]"
+            console.print(f"{icon} ({elapsed:.2f}s, cached)")
+
+            # Upsert check_result using cached status
+            details = {
+                "status": check_status,
+                "exit_code": exit_code,
+                "time": round(elapsed, 2),
+                "git_status": status,
+                "machine": socket.gethostname(),
+                "cached": True,
+            }
+            comment = json.dumps(details)
+            existing_result = db.fetchone(
+                "SELECT id FROM check_results WHERE commit_id = ? AND check_id = ?",
+                (commit_id, check_id),
+            )
+            if existing_result:
+                db.execute(
+                    "UPDATE check_results SET status = ?, comment = ?, logged_at = ?, machine_id = ? WHERE id = ?",
+                    (check_status, comment, datetime.now(), socket.gethostname(), existing_result["id"]),
+                )
+            else:
+                db.insert_and_get_id(
+                    "check_results",
+                    commit_id=commit_id,
+                    check_id=check_id,
+                    status=check_status,
+                    comment=comment,
+                    logged_at=datetime.now(),
+                    machine_id=socket.gethostname(),
+                )
+            db.commit()
+
+            results.append({
+                "name": check_name, "status": check_status,
+                "exit_code": exit_code, "time": elapsed, "mandatory": mandatory,
+            })
+            if mandatory and exit_code != 0:
+                failed_mandatory = True
+            continue
+
         logger.debug(f"Executing check command: {check_command}")
         logger.debug(
             f"Shell environment: SHELL={os.environ.get('SHELL', '(not set)')},"
@@ -276,6 +346,15 @@ def run_checks(
                 )
 
             db.commit()
+
+            # Save to cache after successful execution
+            if files_hash and not bypass_cache:
+                save_cache_entry(
+                    db, proj["id"], wt["id"], cache_key, files_hash,
+                    result.stdout.decode(errors="replace") if result.stdout else "",
+                    result.stderr.decode(errors="replace") if result.stderr else "",
+                    exit_code, elapsed, socket.gethostname(),
+                )
 
             console.print(f"{icon} ({elapsed:.2f}s)")
 

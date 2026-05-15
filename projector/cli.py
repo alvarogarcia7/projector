@@ -206,11 +206,12 @@ def run_cmd(
     worktree: Optional[str] = typer.Argument(None),
     check: Optional[str] = typer.Option(None, "--check", "-c"),
     dry_run: bool = typer.Option(False, "--dry-run"),
+    bypass_cache: bool = typer.Option(False, "-B", help="Bypass cache and force re-execution of all checks"),
 ):
     """Run checks and record results."""
     project = resolve_project(project)
     worktree = resolve_worktree(worktree)
-    run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run)
+    run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run, bypass_cache=bypass_cache)
 
 
 # Runner command

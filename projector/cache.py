@@ -1,11 +1,34 @@
 """Command execution cache for runner."""
 
+import fnmatch
 import hashlib
 import logging
+import os
 import subprocess
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _read_projector_ignore() -> list:
+    """Read patterns from .projector/.projectorignore file."""
+    ignore_path = Path.cwd() / ".projector" / ".projectorignore"
+    if not ignore_path.exists():
+        return []
+    try:
+        with open(ignore_path) as f:
+            return [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+    except Exception:
+        return []
+
+
+def _is_projector_ignored(filepath: str, patterns: list) -> bool:
+    """Check if a filepath matches any .projectorignore pattern."""
+    return any(
+        fnmatch.fnmatch(filepath, p) or fnmatch.fnmatch(os.path.basename(filepath), p)
+        for p in patterns
+    )
 
 
 def get_git_changed_files_hash() -> Optional[str]:
@@ -57,6 +80,13 @@ def get_git_changed_files_hash() -> Optional[str]:
         )
         changed_files = [f for f in files_result.stdout.strip().split("\n") if f]
         logger.debug(f"Found {len(changed_files)} changed/untracked files")
+
+        ignore_patterns = _read_projector_ignore()
+        if ignore_patterns:
+            before = len(changed_files)
+            changed_files = [f for f in changed_files if not _is_projector_ignored(f, ignore_patterns)]
+            filtered = before - len(changed_files)
+            logger.debug(f".projectorignore filtered {filtered} file(s), {len(changed_files)} remain")
 
         files_hashed = 0
         for filepath in sorted(changed_files):
