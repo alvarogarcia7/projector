@@ -23,8 +23,8 @@ export XDG_CONFIG_HOME="${TEST_DIR}/.config"
 export XDG_DATA_HOME="${TEST_DIR}/.data"
 
 # Ensure projector is installed
-if ! command -v proj &> /dev/null; then
-    echo -e "${RED}✗ projector CLI not found in PATH${NC}"
+if [[ ! -f projector/cli.py ]]; then
+    echo -e "${RED}✗ python -m projector/cli.py not found in PATH${NC}"
     exit 1
 fi
 
@@ -58,7 +58,7 @@ trap cleanup EXIT
 
 # Helper function to run proj commands
 run_proj() {
-    proj "$@" 2>&1 || return $?
+    uv run python -m projector.cli "$@" 2>&1 || return $?
 }
 
 # Helper function to assert command succeeds
