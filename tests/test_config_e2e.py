@@ -9,7 +9,7 @@ from projector.git import get_git_branch
 
 
 def test_config_set_creates_project_config():
-    """Test that config set creates .projector-config file."""
+    """Test that config set creates .projector/.env file with PROJECT key."""
     with tempfile.TemporaryDirectory() as tmpdir:
         original_cwd = Path.cwd()
         try:
@@ -26,10 +26,10 @@ def test_config_set_creates_project_config():
             # Run config set
             config_set("test-project")
 
-            # Verify .projector-config was created
-            config_file = Path(tmpdir) / ".projector-config"
-            assert config_file.exists()
-            assert config_file.read_text() == "test-project"
+            # Verify .projector/.env was created with PROJECT key
+            env_file = Path(tmpdir) / ".projector" / ".env"
+            assert env_file.exists()
+            assert "PROJECT=test-project" in env_file.read_text()
         finally:
             os.chdir(original_cwd)
 
@@ -80,7 +80,7 @@ def test_config_set_creates_worktree_config():
 
 
 def test_config_set_creates_path_config():
-    """Test that config set creates .projector-path file with bin directory."""
+    """Test that config set creates .projector/.env file with CHECKS_BIN_PATH key."""
     with tempfile.TemporaryDirectory() as tmpdir:
         original_cwd = Path.cwd()
         try:
@@ -100,16 +100,18 @@ def test_config_set_creates_path_config():
             # Run config set
             config_set("test-project")
 
-            # Verify .projector-path was created
-            path_file = Path(tmpdir) / ".projector-path"
-            assert path_file.exists()
-            assert str(bin_dir) in path_file.read_text()
+            # Verify .projector/.env was created with CHECKS_BIN_PATH key
+            env_file = Path(tmpdir) / ".projector" / ".env"
+            assert env_file.exists()
+            env_content = env_file.read_text()
+            assert "CHECKS_BIN_PATH=" in env_content
+            assert str(bin_dir) in env_content
         finally:
             os.chdir(original_cwd)
 
 
 def test_resolve_project_from_config():
-    """Test that resolve_project reads from .projector-config."""
+    """Test that resolve_project reads from .projector/.env."""
     with tempfile.TemporaryDirectory() as tmpdir:
         original_cwd = Path.cwd()
         try:
@@ -117,9 +119,11 @@ def test_resolve_project_from_config():
 
             os.chdir(tmpdir)
 
-            # Create config file
-            config_file = Path(tmpdir) / ".projector-config"
-            config_file.write_text("my-project")
+            # Create .projector directory and .env file
+            projector_dir = Path(tmpdir) / ".projector"
+            projector_dir.mkdir()
+            env_file = projector_dir / ".env"
+            env_file.write_text("PROJECT=my-project\n")
 
             # Resolve project
             project = resolve_project(None)
@@ -157,9 +161,11 @@ def test_resolve_project_with_explicit_argument():
 
             os.chdir(tmpdir)
 
-            # Create config file with different project
-            config_file = Path(tmpdir) / ".projector-config"
-            config_file.write_text("config-project")
+            # Create .projector/.env with different project
+            projector_dir = Path(tmpdir) / ".projector"
+            projector_dir.mkdir()
+            env_file = projector_dir / ".env"
+            env_file.write_text("PROJECT=config-project\n")
 
             # Resolve with explicit argument
             project = resolve_project("explicit-project")
