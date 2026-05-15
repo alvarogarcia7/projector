@@ -240,10 +240,15 @@ def run_checks(
                 )
             db.commit()
 
-            results.append({
-                "name": check_name, "status": check_status,
-                "exit_code": exit_code, "time": elapsed, "mandatory": mandatory,
-            })
+            results.append(
+                {
+                    "name": check_name,
+                    "status": check_status,
+                    "exit_code": exit_code,
+                    "time": elapsed,
+                    "mandatory": mandatory,
+                }
+            )
             if mandatory and exit_code != 0:
                 failed_mandatory = True
             continue
@@ -299,14 +304,17 @@ def run_checks(
                 logging.debug(f"PATH directories: {path_env}")
 
                 command_path = shutil.which(check_command)
-                logging.debug(f"Check {check_name}: Looking for command '{check_command}': {command_path if command_path else 'not found'}")
+                cmd_status = command_path if command_path else "not found"
+                logging.debug(f"Check {check_name}: Looking for command '{check_command}': {cmd_status}")
 
                 if command_path:
                     is_executable = os.access(command_path, os.X_OK)
                     logging.debug(f"Check {check_name}: Command '{check_command}' executable: {is_executable}")
                 else:
                     logging.debug(f"Check {check_name}: Command '{check_command}' not found in PATH")
-            logging.debug(f"Check {check_name}: command '{check_command}' details: {result.stdout.strip() or '(no output)'}")
+            logging.debug(
+                f"Check {check_name}: command '{check_command}' details: {result.stdout.strip() or '(no output)'}"
+            )
 
             # Record result with full execution details as JSON
             existing_result = db.fetchone(
@@ -350,10 +358,16 @@ def run_checks(
             # Save to cache after successful execution
             if files_hash and not bypass_cache:
                 save_cache_entry(
-                    db, proj["id"], wt["id"], cache_key, files_hash,
+                    db,
+                    proj["id"],
+                    wt["id"],
+                    cache_key,
+                    files_hash,
                     result.stdout.decode(errors="replace") if result.stdout else "",
                     result.stderr.decode(errors="replace") if result.stderr else "",
-                    exit_code, elapsed, socket.gethostname(),
+                    exit_code,
+                    elapsed,
+                    socket.gethostname(),
                 )
 
             console.print(f"{icon} ({elapsed:.2f}s)")

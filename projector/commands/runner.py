@@ -30,7 +30,10 @@ def runner_command(
     On subsequent runs with the same git state, returns cached results instantly.
     Use -B to bypass cache and force re-execution.
     """
-    logger.debug(f"runner_command() called with args={command_args}, project={project}, worktree={worktree}, bypass_cache={bypass_cache}")
+    logger.debug(
+        f"runner_command() called with args={command_args}, project={project}, "
+        f"worktree={worktree}, bypass_cache={bypass_cache}"
+    )
 
     if not command_args:
         logger.error("No command specified")
@@ -116,7 +119,7 @@ def runner_command(
 
     start_time = time.time()
 
-    logger.debug(f"Running subprocess: shell=True, capture_output=True")
+    logger.debug("Running subprocess: shell=True, capture_output=True")
     result = subprocess.run(
         command,
         shell=True,
@@ -133,7 +136,9 @@ def runner_command(
     logger.info(f"Command completed in {elapsed:.2f}s with exit code {exit_code}")
     if exit_code != 0:
         logger.warning(f"Command failed with exit code {exit_code}")
-    logger.debug(f"Command output: stdout={len(stdout) if stdout else 0} bytes, stderr={len(stderr) if stderr else 0} bytes")
+    logger.debug(
+        f"Command output: stdout={len(stdout) if stdout else 0} bytes, stderr={len(stderr) if stderr else 0} bytes"
+    )
 
     if stdout:
         sys.stdout.write(stdout)

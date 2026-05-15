@@ -25,10 +25,7 @@ def _read_projector_ignore() -> list:
 
 def _is_projector_ignored(filepath: str, patterns: list) -> bool:
     """Check if a filepath matches any .projectorignore pattern."""
-    return any(
-        fnmatch.fnmatch(filepath, p) or fnmatch.fnmatch(os.path.basename(filepath), p)
-        for p in patterns
-    )
+    return any(fnmatch.fnmatch(filepath, p) or fnmatch.fnmatch(os.path.basename(filepath), p) for p in patterns)
 
 
 def get_git_changed_files_hash() -> Optional[str]:

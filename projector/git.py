@@ -15,7 +15,7 @@ def is_git_repo(path: Path = None) -> bool:
 
     logger.debug(f"Checking if git repository at {path}")
     try:
-        result = subprocess.run(
+        subprocess.run(
             ["git", "rev-parse", "--git-dir"],
             cwd=str(path),
             capture_output=True,
@@ -23,7 +23,7 @@ def is_git_repo(path: Path = None) -> bool:
         )
         logger.debug(f"Git repository found at {path}")
         return True
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         logger.debug(f"Not a git repository at {path}: git command failed")
         return False
     except FileNotFoundError:
