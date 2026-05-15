@@ -99,9 +99,7 @@ def archive_check(project: str, name: str) -> None:
         console.print(f"[red]✗[/red] Project '{project}' not found")
         raise typer.Exit(1)
 
-    check = db.fetchone(
-        "SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name)
-    )
+    check = db.fetchone("SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name))
     if not check:
         console.print(f"[red]✗[/red] Check '{name}' not found in project '{project}'")
         raise typer.Exit(1)
@@ -125,9 +123,7 @@ def restore_check(project: str, name: str) -> None:
         console.print(f"[red]✗[/red] Project '{project}' not found")
         raise typer.Exit(1)
 
-    check = db.fetchone(
-        "SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name)
-    )
+    check = db.fetchone("SELECT id FROM checks WHERE project_id = ? AND name = ?", (proj["id"], name))
     if not check:
         console.print(f"[red]✗[/red] Check '{name}' not found in project '{project}'")
         raise typer.Exit(1)

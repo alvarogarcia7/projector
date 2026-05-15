@@ -177,9 +177,7 @@ def _show_worktree_history(db: Database, project_id: int, worktree_name: str, sh
     console.print(table)
 
 
-def _show_commit_detail(
-    db: Database, project_id: int, worktree_name: str, sha: str, show_archived: bool
-):
+def _show_commit_detail(db: Database, project_id: int, worktree_name: str, sha: str, show_archived: bool):
     """Show details for a specific commit."""
     wt = db.fetchone(
         "SELECT id FROM worktrees WHERE project_id = ? AND name = ?",

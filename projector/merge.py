@@ -162,9 +162,7 @@ class MergeManager:
                         (check["archived_at"], existing[0]),
                     )
                     self.stats["conflicts"] += 1
-                    self._log_conflict(
-                        "checks", existing[0], "Propagated archive status from foreign DB"
-                    )
+                    self._log_conflict("checks", existing[0], "Propagated archive status from foreign DB")
             else:
                 local_cursor.execute(
                     """INSERT INTO checks (project_id, name, description, mandatory, archived, archived_at, created_at)

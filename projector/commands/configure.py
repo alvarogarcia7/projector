@@ -66,9 +66,7 @@ def configure_from_file(
                 break
 
         if not config_path:
-            console.print(
-                "[red]✗[/red] No configuration file found. Specify with --file or create one at:"
-            )
+            console.print("[red]✗[/red] No configuration file found. Specify with --file or create one at:")
             for candidate in candidates:
                 console.print(f"  {candidate}")
             raise typer.Exit(1)
@@ -89,9 +87,7 @@ def configure_from_file(
 
     # Validate structure
     if not isinstance(config, dict) or "projects" not in config:
-        console.print(
-            "[red]✗[/red] Invalid config format. Expected 'projects:' key with list of projects"
-        )
+        console.print("[red]✗[/red] Invalid config format. Expected 'projects:' key with list of projects")
         raise typer.Exit(1)
 
     projects = config.get("projects", [])
@@ -188,10 +184,7 @@ def configure_from_file(
                     skipped += 1
 
     # Summary
-    console.print(
-        f"\n[bold]Summary:[/bold] "
-        f"{projects_added} projects, {checks_added} checks added, {skipped} skipped"
-    )
+    console.print(f"\n[bold]Summary:[/bold] {projects_added} projects, {checks_added} checks added, {skipped} skipped")
 
     if projects_added == 0 and checks_added == 0 and skipped > 0:
         raise typer.Exit(1)

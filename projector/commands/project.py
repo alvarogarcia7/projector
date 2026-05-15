@@ -41,9 +41,7 @@ def list_projects() -> None:
     db = Database()
     db.init_schema()
 
-    rows = db.fetchall(
-        "SELECT id, name, description, repo_path, created_at FROM projects ORDER BY name"
-    )
+    rows = db.fetchall("SELECT id, name, description, repo_path, created_at FROM projects ORDER BY name")
 
     if not rows:
         console.print("[yellow]No projects found[/yellow]")
@@ -96,9 +94,7 @@ def remove_project(name: str, confirm: bool = typer.Option(False, "--yes", "-y")
         raise typer.Exit(1)
 
     if not confirm:
-        console.print(
-            f"[yellow]This will remove project '{name}' and all associated data.[/yellow]"
-        )
+        console.print(f"[yellow]This will remove project '{name}' and all associated data.[/yellow]")
         if not typer.confirm("Continue?"):
             console.print("Cancelled")
             return
@@ -107,15 +103,11 @@ def remove_project(name: str, confirm: bool = typer.Option(False, "--yes", "-y")
     cursor = conn.cursor()
 
     # Get all worktrees for this project
-    worktrees = cursor.execute(
-        "SELECT id FROM worktrees WHERE project_id = ?", (project["id"],)
-    ).fetchall()
+    worktrees = cursor.execute("SELECT id FROM worktrees WHERE project_id = ?", (project["id"],)).fetchall()
 
     # Delete check_results, commits, checks, worktrees
     for wt in worktrees:
-        commits = cursor.execute(
-            "SELECT id FROM commits WHERE worktree_id = ?", (wt["id"],)
-        ).fetchall()
+        commits = cursor.execute("SELECT id FROM commits WHERE worktree_id = ?", (wt["id"],)).fetchall()
         for commit in commits:
             cursor.execute("DELETE FROM check_results WHERE commit_id = ?", (commit["id"],))
         cursor.execute("DELETE FROM commits WHERE worktree_id = ?", (wt["id"],))

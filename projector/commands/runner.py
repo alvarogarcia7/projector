@@ -1,5 +1,6 @@
 """Run arbitrary commands with caching."""
 
+import logging
 import socket
 import subprocess
 import sys
@@ -13,6 +14,7 @@ from ..cache import clear_cache_entry, get_cache_entry, get_git_changed_files_ha
 from ..db import Database
 
 console = Console()
+logger = logging.getLogger(__name__)
 
 
 def runner_command(
@@ -28,11 +30,15 @@ def runner_command(
     On subsequent runs with the same git state, returns cached results instantly.
     Use -B to bypass cache and force re-execution.
     """
+    logger.debug(f"runner_command() called with args={command_args}, project={project}, worktree={worktree}, bypass_cache={bypass_cache}")
+
     if not command_args:
+        logger.error("No command specified")
         console.print("[red]✗[/red] No command specified")
         raise typer.Exit(1)
 
     command = " ".join(command_args)
+    logger.debug(f"Command to execute: {command}")
 
     db = Database()
     db.init_schema()
@@ -51,7 +57,9 @@ def runner_command(
         raise typer.Exit(1)
 
     if not worktree:
+        logger.debug("Worktree not provided, attempting auto-detect from git")
         try:
+            logger.debug("Executing: git rev-parse --abbrev-ref HEAD")
             result = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 capture_output=True,
@@ -59,7 +67,13 @@ def runner_command(
                 check=True,
             )
             worktree = result.stdout.strip()
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.debug(f"Auto-detected worktree: {worktree}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to auto-detect worktree: {e}")
+            console.print("[red]✗[/red] Worktree required (could not auto-detect from git)")
+            raise typer.Exit(1)
+        except FileNotFoundError:
+            logger.error("git command not found. Is git installed and in PATH?")
             console.print("[red]✗[/red] Worktree required (could not auto-detect from git)")
             raise typer.Exit(1)
 
@@ -97,8 +111,12 @@ def runner_command(
         exit_code = cache_entry["exit_code"]
         raise typer.Exit(exit_code)
 
+    logger.info(f"Executing command (project={project}, worktree={worktree}): {command}")
+    logger.debug(f"Cache: bypass={bypass_cache}, files_hash={files_hash}")
+
     start_time = time.time()
 
+    logger.debug(f"Running subprocess: shell=True, capture_output=True")
     result = subprocess.run(
         command,
         shell=True,
@@ -111,6 +129,11 @@ def runner_command(
     stdout = result.stdout
     stderr = result.stderr
     exit_code = result.returncode
+
+    logger.info(f"Command completed in {elapsed:.2f}s with exit code {exit_code}")
+    if exit_code != 0:
+        logger.warning(f"Command failed with exit code {exit_code}")
+    logger.debug(f"Command output: stdout={len(stdout) if stdout else 0} bytes, stderr={len(stderr) if stderr else 0} bytes")
 
     if stdout:
         sys.stdout.write(stdout)

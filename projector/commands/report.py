@@ -109,9 +109,7 @@ def _output_csv(rows):
     import csv
     import sys
 
-    writer = csv.DictWriter(
-        sys.stdout, fieldnames=["worktree", "sha", "check", "status", "comment", "logged_at"]
-    )
+    writer = csv.DictWriter(sys.stdout, fieldnames=["worktree", "sha", "check", "status", "comment", "logged_at"])
     writer.writeheader()
 
     for row in rows:

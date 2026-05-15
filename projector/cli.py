@@ -58,9 +58,7 @@ def resolve_worktree(worktree_arg: Optional[str]) -> Optional[str]:
     return get_worktree_from_config()
 
 
-app = typer.Typer(
-    help="Projector — Track software project health across machines", no_args_is_help=True
-)
+app = typer.Typer(help="Projector — Track software project health across machines", no_args_is_help=True)
 
 
 @app.callback()

@@ -14,9 +14,7 @@ console = Console()
 
 def init_checks_from_yaml(
     project: str,
-    config_file: Optional[str] = typer.Option(
-        None, "--file", "-f", help="Path to checks config file"
-    ),
+    config_file: Optional[str] = typer.Option(None, "--file", "-f", help="Path to checks config file"),
 ) -> None:
     """
     Initialize checks for a project from a YAML configuration file.
@@ -64,10 +62,7 @@ def init_checks_from_yaml(
                 break
 
         if not config_path:
-            console.print(
-                "[red]✗[/red] No checks configuration file found. "
-                "Specify with --file or create one at:"
-            )
+            console.print("[red]✗[/red] No checks configuration file found. Specify with --file or create one at:")
             for candidate in candidates:
                 console.print(f"  {candidate}")
             raise typer.Exit(1)
@@ -88,9 +83,7 @@ def init_checks_from_yaml(
 
     # Validate structure
     if not isinstance(config, dict) or "checks" not in config:
-        console.print(
-            "[red]✗[/red] Invalid config format. Expected 'checks:' key with list of checks"
-        )
+        console.print("[red]✗[/red] Invalid config format. Expected 'checks:' key with list of checks")
         raise typer.Exit(1)
 
     checks = config.get("checks", [])
