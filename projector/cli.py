@@ -347,9 +347,28 @@ def config_clear():
     """Clear the default project for this directory."""
     from pathlib import Path
 
-    config_file = Path.cwd() / ".projector-config"
-    if config_file.exists():
-        config_file.unlink()
+    # Read current config
+    env_path = Path.cwd() / ".projector" / ".env"
+    if env_path.exists():
+        # Remove PROJECT key from .env
+        env_data = {}
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    if key.strip() != "PROJECT":
+                        env_data[key.strip()] = value.strip()
+
+        # Rewrite without PROJECT key
+        if env_data:
+            env_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(env_path, "w") as f:
+                for key, value in env_data.items():
+                    f.write(f"{key}={value}\n")
+        else:
+            # Remove empty .env file
+            env_path.unlink()
         typer.echo("✓ Default project cleared")
     else:
         typer.echo("No default project configured")
