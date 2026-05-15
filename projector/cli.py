@@ -24,9 +24,13 @@ from .config import (
     get_checks_bin_path,
     get_path_config,
     get_project_from_config,
+    get_worktree_from_config,
     save_path_config,
     save_project_config,
+    save_worktree_config,
 )
+from .db import Database
+from .git import get_git_branch
 
 
 def resolve_project(project_arg: Optional[str]) -> str:
@@ -42,6 +46,14 @@ def resolve_project(project_arg: Optional[str]) -> str:
     typer.echo("  1. Provide project name as argument: proj status my-app")
     typer.echo("  2. Save project config: proj config set my-app")
     raise typer.Exit(1)
+
+
+def resolve_worktree(worktree_arg: Optional[str]) -> Optional[str]:
+    """Resolve worktree name from argument or config."""
+    if worktree_arg:
+        return worktree_arg
+
+    return get_worktree_from_config()
 
 
 app = typer.Typer(
@@ -64,10 +76,11 @@ def configure_cmd(config_file: Optional[str] = typer.Option(None, "--file", "-f"
 
 @app.command(name="init-checks")
 def init_checks_cmd(
-    project: str,
+    project: Optional[str] = typer.Argument(None),
     config_file: Optional[str] = typer.Option(None, "--file", "-f"),
 ):
     """Initialize checks for a project from YAML file."""
+    project = resolve_project(project)
     init_checks.init_checks_from_yaml(project, config_file=config_file)
 
 
@@ -178,6 +191,7 @@ def run_cmd(
 ):
     """Run checks and record results."""
     project = resolve_project(project)
+    worktree = resolve_worktree(worktree)
     run.run_checks(project, worktree=worktree, check=check, dry_run=dry_run)
 
 
@@ -222,6 +236,7 @@ def status_cmd(
 ):
     """Show project status."""
     project = resolve_project(project)
+    worktree = resolve_worktree(worktree)
     status.status_command(project, worktree=worktree, sha=sha, show_archived=show_archived)
 
 
@@ -235,6 +250,7 @@ def report_cmd(
 ):
     """Generate a report of check results."""
     project = resolve_project(project)
+    worktree = resolve_worktree(worktree)
     report.report_command(project, format=format, worktree=worktree, since=since)
 
 
@@ -263,8 +279,57 @@ app.add_typer(config_app, name="config")
 @config_app.command("set")
 def config_set(project: str):
     """Set the default project for this directory."""
+    from datetime import datetime
+    from pathlib import Path
+
     save_project_config(project)
     typer.echo(f"✓ Default project set to '{project}'")
+
+    # Also save the current git branch as the worktree
+    branch = get_git_branch()
+    if branch:
+        db = Database()
+        db.init_schema()
+
+        # Get project from database
+        proj = db.fetchone("SELECT id FROM projects WHERE name = ?", (project,))
+        if proj:
+            # Check if worktree already exists
+            wt = db.fetchone(
+                "SELECT id FROM worktrees WHERE project_id = ? AND name = ?",
+                (proj["id"], branch),
+            )
+            if not wt:
+                # Create the worktree
+                try:
+                    db.insert_and_get_id(
+                        "worktrees",
+                        project_id=proj["id"],
+                        name=branch,
+                        path=None,
+                        created_at=datetime.now(),
+                    )
+                    typer.echo(f"✓ Worktree '{branch}' created in project '{project}'")
+                except Exception as e:
+                    typer.echo(f"[yellow]⚠[/yellow] Could not create worktree: {e}")
+            else:
+                typer.echo(f"✓ Worktree '{branch}' already exists")
+        else:
+            typer.echo(f"[yellow]⚠[/yellow] Project '{project}' not found in database")
+
+        save_worktree_config(branch)
+        typer.echo(f"✓ Default worktree set to '{branch}' (from current branch)")
+    else:
+        typer.echo("[yellow]⚠[/yellow] Not in a git repository; worktree not set")
+
+    # Set up PATH to include bin/ directory
+    bin_dir = Path.cwd() / "bin"
+    if bin_dir.exists():
+        save_path_config(str(bin_dir))
+        apply_path_config()
+        typer.echo(f"✓ Added {bin_dir} to PATH")
+    else:
+        typer.echo(f"[dim]Note: bin/ directory not found at {bin_dir}[/dim]")
 
 
 @config_app.command("get")
