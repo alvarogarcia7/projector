@@ -85,7 +85,7 @@ def init_checks_cmd(
 
 
 # Project commands
-project_app = typer.Typer(help="Manage projects")
+project_app = typer.Typer(help="Manage projects", no_args_is_help=True)
 app.add_typer(project_app, name="project")
 
 
@@ -118,7 +118,7 @@ def project_remove(name: str, yes: bool = typer.Option(False, "--yes", "-y")):
 
 
 # Worktree commands
-worktree_app = typer.Typer(help="Manage worktrees")
+worktree_app = typer.Typer(help="Manage worktrees", no_args_is_help=True)
 app.add_typer(worktree_app, name="worktree")
 
 
@@ -145,7 +145,7 @@ def worktree_remove(project: str, name: str, yes: bool = typer.Option(False, "--
 
 
 # Check commands
-check_app = typer.Typer(help="Manage checks")
+check_app = typer.Typer(help="Manage checks", no_args_is_help=True)
 app.add_typer(check_app, name="check")
 
 
@@ -255,7 +255,7 @@ def report_cmd(
 
 
 # Sync commands
-sync_app = typer.Typer(help="Sync databases")
+sync_app = typer.Typer(help="Sync databases", no_args_is_help=True)
 app.add_typer(sync_app, name="sync")
 
 
@@ -272,7 +272,7 @@ def sync_export(output: Optional[str] = typer.Option(None, "--output", "-o")):
 
 
 # Config commands
-config_app = typer.Typer(help="Manage local configuration")
+config_app = typer.Typer(help="Manage local configuration", no_args_is_help=True)
 app.add_typer(config_app, name="config")
 
 
