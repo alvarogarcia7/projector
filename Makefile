@@ -1,3 +1,5 @@
+include mk/backlog.mk
+
 # Colors for output
 COLOR_RESET = \033[0m
 COLOR_BOLD = \033[1m
