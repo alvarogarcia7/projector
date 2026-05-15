@@ -1,7 +1,7 @@
 ---
 id: PROJ-2
 title: 'Log-level: including a hierarchy of options'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-05-15 13:49'
 updated_date: '2026-05-15 13:52'

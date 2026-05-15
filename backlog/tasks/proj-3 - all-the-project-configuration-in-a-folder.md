@@ -1,7 +1,7 @@
 ---
 id: PROJ-3
 title: all the project configuration in a folder
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-05-15 13:51'
 updated_date: '2026-05-15 13:52'

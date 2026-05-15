@@ -1,12 +1,13 @@
 ---
 id: PROJ-1.1
 title: Caching both for runner and for checks
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-05-15 14:43'
-updated_date: '2026-05-15 14:46'
+updated_date: '2026-05-15 15:52'
 labels: []
 dependencies: []
+ordinal: 2000
 ---
 
 ## Description

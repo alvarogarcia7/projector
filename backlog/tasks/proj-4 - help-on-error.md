@@ -1,7 +1,7 @@
 ---
 id: PROJ-4
 title: '--help on error'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-05-15 13:52'
 updated_date: '2026-05-15 13:52'
